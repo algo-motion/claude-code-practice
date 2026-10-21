@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Thiết kế UML — Tra Cứu AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f8f6f2;--panel:#fffdfa;--sunk:#f2eee8;--ink:#1d1a17;--ink2:#57514a;--ink3:#857e75;--line:#e6e0d7;--line2:#efeae3;--acc:#d0662f;--acc-ink:#a64b1b;--acc-soft:#fbece2;--mono:'JetBrains Mono',ui-monospace,monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 'Be Vietnam Pro',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--acc-ink)}a:hover{color:var(--ink)}h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.02em;text-wrap:pretty}p{margin:0;text-wrap:pretty}
+.wrap{max-width:1280px;margin:0 auto;padding:48px 40px 80px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:40px}
+.toc{position:sticky;top:32px;align-self:start;display:grid;gap:2px}.toc .h{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin:0 10px 8px}
+.toc a{display:flex;gap:10px;padding:7px 10px;border-radius:8px;text-decoration:none;color:var(--ink2);font-size:14px}.toc a:hover{background:var(--sunk);color:var(--ink)}.toc a.on{background:var(--acc-soft);color:var(--acc-ink)}.toc a i{font:500 11px/21px var(--mono);font-style:normal;color:var(--ink3);width:18px}
+.toc .back{margin-top:18px;font-size:13px}
+.eyebrow{font-size:13px;font-weight:600;color:var(--acc-ink);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px}
+.intro h1{font-size:34px}.intro p{color:var(--ink2);max-width:680px;margin-top:8px}
+.sec{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px 30px;margin-top:24px;scroll-margin-top:24px}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:6px}.sec h2{font-size:21px}.kind{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--acc-ink);background:var(--acc-soft);padding:4px 9px;border-radius:6px}
+.sec>p{color:var(--ink2);font-size:14px;max-width:760px}
+.dg{margin-top:20px;padding:20px;border:1px solid var(--line2);border-radius:12px;background:#fff;overflow-x:auto}.dg .mermaid{width:100%;margin:0}.dg svg{display:block;margin:0 auto;height:auto}
+.mermaid{visibility:hidden}.mermaid[data-processed]{visibility:visible}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:16px}.notes div{background:var(--sunk);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--ink2)}.notes b{color:var(--ink);display:block;font-weight:600;margin-bottom:2px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:18px}th{text-align:left;font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);padding:10px 12px;background:var(--bg);border-bottom:1px solid var(--line)}td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}td code{font:12px var(--mono);background:var(--sunk);padding:2px 6px;border-radius:4px;white-space:nowrap}.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px}.tbl table{margin:0}
+h3{font-size:16px;margin-top:28px}
+@media (max-width:900px){.wrap{grid-template-columns:1fr;padding:32px 20px}.toc{position:static;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}}
+</style></head>
+<body><div class="wrap">
+<nav class="toc" id="toc"><div class="h">Sơ đồ</div>
+<a href="#usecase"><i>01</i>Use case</a><a href="#seq-ask"><i>02</i>Tuần tự · Hỏi đáp</a><a href="#seq-search"><i>03</i>Tuần tự · Tìm kiếm</a><a href="#seq-ingest"><i>04</i>Tuần tự · Nạp tài liệu</a><a href="#activity"><i>05</i>Luồng logic xử lý</a><a href="#state"><i>06</i>Trạng thái tài liệu</a><a href="#class"><i>07</i>Lớp · Flask app</a><a href="#erd"><i>08</i>Cơ sở dữ liệu (ERD)</a><a href="#ddb"><i>09</i>DynamoDB</a>
+<a class="back" href="Kien truc AWS.html">← Kiến trúc AWS</a><a class="back" href="Tra Cuu AI.html" style="margin-top:0">← Prototype</a></nav>
+<main>
+<div class="intro"><div class="eyebrow">Tra Cứu AI · Thiết kế (khớp mã nguồn)</div><h1>Sơ đồ UML</h1><p>Mô tả các khía cạnh thiết kế chính ở mức cơ bản: ai dùng hệ thống, các thành phần gọi nhau ra sao, logic xử lý từng bước, vòng đời tài liệu, cấu trúc code Flask và mô hình dữ liệu.</p></div>
+
+<section class="sec" id="usecase"><div class="sec-h"><h2>Use case</h2><span class="kind">Use case</span></div>
+<p>Có hai tác nhân: Nhân viên và Quản trị viên (Quản trị viên kế thừa mọi quyền của Nhân viên). Hệ thống AWS là tác nhân phụ, tự chạy việc lập chỉ mục và tóm tắt.</p>
+<div class="dg"><pre class="mermaid">
+flowchart LR
+  NV(["Nhân viên"])
+  QT(["Quản trị viên"])
+  SYS(["Hệ thống AWS"])
+  subgraph APP["Tra Cứu AI"]
+    direction TB
+    U1("Đăng nhập SSO")
+    U2("Tìm kiếm ngữ nghĩa")
+    U3("Hỏi đáp có trích dẫn<br/>toàn kho hoặc một tài liệu")
+    U4("Xem trước & tóm tắt tài liệu")
+    U5("Upload tài liệu")
+    U6("Xem và xoá lịch sử tìm kiếm")
+    U11("Đánh giá câu trả lời")
+    U12("Xoá tài liệu của mình")
+    U7("Cấu hình Knowledge Base")
+    U8("Xem phân quyền nhóm")
+    U9("Theo dõi đồng bộ, thống kê<br/>và thử lại tài liệu lỗi")
+    U10("Lập chỉ mục tài liệu")
+  end
+  NV --- U1 & U2 & U3 & U4 & U5 & U6 & U11 & U12
+  QT --- U7 & U8 & U9
+  QT -. "kế thừa" .-> NV
+  U5 -. "include" .-> U10
+  SYS --- U10
+</pre></div></section>
+
+<section class="sec" id="seq-ask"><div class="sec-h"><h2>Tuần tự · Hỏi đáp RAG</h2><span class="kind">Sequence</span></div>
+<p>Luồng chính của ứng dụng. Bộ lọc nhóm được dựng ở server từ JWT do ALB ký, Bedrock chỉ truy xuất các đoạn người dùng được phép xem, câu trả lời stream về trình duyệt qua SSE. Ở trang tìm kiếm, UI gọi với <code>save=false</code>: không tạo phiên chat, không lưu tin nhắn.</p>
+<div class="dg"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor U as Nhân viên
+  participant B as Trình duyệt
+  participant ALB as WAF + ALB + Cognito
+  participant F as Flask (Fargate)
+  participant KB as Bedrock KB
+  participant VS as S3 Vectors
+  participant M as Claude + Guardrails
+  participant D as DynamoDB
+  U->>B: Nhập câu hỏi
+  B->>ALB: POST /api/ask (cookie phiên)
+  ALB->>ALB: Xác thực phiên OIDC với Cognito
+  ALB->>F: Chuyển tiếp + header x-amzn-oidc-data (JWT)
+  F->>F: Kiểm tra JWT, validate input, rate limit, dựng filter theo groups
+  opt save = true
+    F->>D: Tạo hoặc nạp phiên chat, lưu tin nhắn người dùng
+  end
+  F->>KB: retrieve_and_generate_stream(question, filter, sessionId)
+  KB->>KB: Tạo embedding câu hỏi (Titan V2)
+  KB->>VS: Tìm kiếm ngữ nghĩa top-k + filter cờ nhóm
+  VS-->>KB: Các đoạn liên quan
+  KB->>M: Prompt + ngữ cảnh
+  alt Guardrails chặn
+    M-->>KB: Thông điệp bị chặn
+    KB-->>F: guardrail INTERVENED
+    F-->>B: SSE blocked: thông báo từ chối lịch sự
+  else Hợp lệ
+    loop Mỗi đoạn văn bản
+      M-->>KB: Token
+      KB-->>F: Chunk + citations
+      F-->>B: SSE delta (kèm mã trích dẫn)
+    end
+    F-->>B: SSE citations (danh sách nguồn)
+  end
+  opt save = true
+    F->>D: Lưu tin nhắn trả lời kèm citations, tăng bộ đếm
+  end
+  F-->>B: SSE done (message_id)
+  B-->>U: Hiển thị câu trả lời & nguồn
+</pre></div></section>
+
+<section class="sec" id="seq-search"><div class="sec-h"><h2>Tuần tự · Tìm kiếm</h2><span class="kind">Sequence</span></div>
+<p>Màn hình kết quả gọi hai API độc lập: <code>/api/search</code> trả danh sách tài liệu có điểm liên quan, <code>/api/ask</code> (save=false) trả câu trả lời AI. Chỉ <code>/api/search</code> ghi lịch sử tìm kiếm.</p>
+<div class="dg"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor U as Nhân viên
+  participant B as Trình duyệt
+  participant F as Flask
+  participant KB as Bedrock KB
+  participant D as DynamoDB
+  U->>B: Nhập từ khoá hoặc câu hỏi
+  B->>F: POST /api/search
+  F->>F: Validate, rate limit, dựng filter theo groups
+  F->>KB: retrieve(query, filter, top-k)
+  KB-->>F: Các đoạn kèm điểm số
+  F->>F: Gộp theo tài liệu, giữ đoạn điểm cao nhất
+  loop Mỗi tài liệu
+    F->>D: GetItem DOCUMENT (còn tồn tại và còn quyền?)
+  end
+  F->>D: PutItem SEARCH_QUERY (TTL 90 ngày), tăng bộ đếm
+  F-->>B: Danh sách kết quả (tiêu đề, đoạn trích, điểm)
+  B->>F: POST /api/ask với save = false
+  F-->>B: SSE câu trả lời AI (không lưu phiên chat)
+</pre></div></section>
+
+<section class="sec" id="seq-ingest"><div class="sec-h"><h2>Tuần tự · Upload & lập chỉ mục</h2><span class="kind">Sequence</span></div>
+<p>Trình duyệt upload thẳng lên S3 bằng presigned URL. Việc lập chỉ mục chạy bất đồng bộ: sự kiện S3 đi qua EventBridge và SQS (gom lô 60 giây) tới Lambda; một Lambda khác chạy mỗi phút để cập nhật trạng thái. UI hỏi định kỳ để lấy trạng thái.</p>
+<div class="dg"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor U as Nhân viên
+  participant B as Trình duyệt
+  participant F as Flask
+  participant S3 as S3
+  participant EB as EventBridge
+  participant Q as SQS nạp tài liệu
+  participant L as Lambda ingest_trigger
+  participant P as Lambda poll_jobs
+  participant KB as Bedrock KB
+  participant D as DynamoDB
+  participant SM as SQS + Lambda tóm tắt
+  U->>B: Kéo thả tệp, chọn nhóm
+  B->>F: POST /api/uploads (tên, kích thước, nhóm)
+  F->>F: Kiểm tra quyền, loại tệp, kích thước
+  F->>D: PutItem DOCUMENT (status=UPLOADING)
+  F->>S3: Ghi doc.metadata.json (doc_id + cờ nhóm)
+  F-->>B: presigned PUT URL
+  B->>S3: PUT tệp
+  S3->>EB: Object Created (tiền tố docs/)
+  EB->>Q: Sự kiện
+  Q->>L: Lô sự kiện (cửa sổ 60 giây)
+  L->>D: UPDATE status=UPLOADED rồi INGESTING, job_id
+  L->>KB: start_ingestion_job(dataSourceId)
+  KB->>S3: Đọc tệp + metadata
+  KB->>KB: Parse, chia đoạn, embedding, ghi vào S3 Vectors
+  loop Mỗi phút
+    P->>KB: get_ingestion_job
+    KB-->>P: IN_PROGRESS / COMPLETE / FAILED
+  end
+  P->>D: UPDATE status=INDEXED hoặc FAILED
+  P->>SM: Gửi yêu cầu tóm tắt (khi INDEXED)
+  SM->>KB: RetrieveAndGenerate lọc theo doc_id
+  SM->>D: Lưu summary
+  loop Mỗi 3 giây
+    B->>F: GET /api/documents/{id}/status
+    F-->>B: status
+  end
+</pre></div></section>
+
+<section class="sec" id="activity"><div class="sec-h"><h2>Luồng logic xử lý câu hỏi</h2><span class="kind">Activity</span></div>
+<p>Logic bên trong endpoint <code>/api/ask</code>, gồm các nhánh kiểm tra và xử lý lỗi. Vì lỗi Bedrock xảy ra sau khi luồng SSE đã mở, chúng được gửi dưới dạng sự kiện <code>error</code> thay vì mã HTTP.</p>
+<div class="dg"><pre class="mermaid">
+flowchart TD
+  S((Bắt đầu)) --> A["Nhận câu hỏi"]
+  A --> V{"Hợp lệ?<br/>1–2000 ký tự"}
+  V -- Không --> E1["400: lỗi input"] --> X((Kết thúc))
+  V -- Có --> R{"Vượt rate limit?<br/>30 req/phút/user"}
+  R -- Có --> E2["429: thử lại sau"] --> X
+  R -- Không --> G["Lấy groups từ JWT của ALB"]
+  G --> F["Dựng filter cờ nhóm<br/>thêm doc_id nếu giới hạn một tài liệu"]
+  F --> DOC{"Tài liệu giới hạn<br/>còn quyền xem?"}
+  DOC -- Không --> E4["Sự kiện error: không tìm thấy tài liệu"] --> X
+  DOC -- Có --> H{"save = true?"}
+  H -- Có --> H1["Tạo hoặc nạp phiên chat<br/>lưu tin nhắn người dùng"] --> C
+  H -- Không --> C
+  C["Gọi RetrieveAndGenerate (stream)"] --> GR{"Guardrails<br/>can thiệp?"}
+  GR -- Có --> B1["Gửi thông điệp từ chối"] --> SV
+  GR -- Không --> ST["Stream câu trả lời + citations"] --> K{"Có nguồn<br/>trích dẫn?"}
+  K -- Không --> N["Đếm vào câu hỏi chưa có câu trả lời"] --> SV
+  K -- Có --> SV
+  C -. "Throttling / lỗi tạm thời" .-> RT{"Retry < 3?"}
+  RT -- Có --> C
+  RT -- Không --> E3["Sự kiện error qua SSE: dịch vụ bận"] --> X
+  SV{"save = true?"} -- Có --> SV1["Lưu tin nhắn trả lời + citations<br/>tăng bộ đếm"] --> X
+  SV -- Không --> X
+</pre></div></section>
+
+<section class="sec" id="state"><div class="sec-h"><h2>Vòng đời tài liệu</h2><span class="kind">State</span></div>
+<p>Trường <code>status</code> của DOCUMENT. Màn hình Thư viện hiển thị theo các trạng thái này. Mỗi lần upload tạo một tài liệu mới (chưa có chức năng thay phiên bản), và xoá là xoá mềm.</p>
+<div class="dg"><pre class="mermaid">
+stateDiagram-v2
+  [*] --> UPLOADING: Tạo bản ghi + presigned URL
+  UPLOADING --> UPLOADED: S3 Object Created
+  UPLOADING --> EXPIRED: Quá 15 phút không upload (kiểm tra khi đọc)
+  UPLOADED --> INGESTING: Lambda gọi StartIngestionJob
+  INGESTING --> INDEXED: Job COMPLETE
+  INGESTING --> FAILED: Job FAILED / tệp lỗi
+  FAILED --> INGESTING: Admin thử lại
+  INDEXED --> DELETED: Xoá tài liệu
+  FAILED --> DELETED: Xoá tài liệu
+  EXPIRED --> [*]
+  DELETED --> [*]: Đồng bộ KB gỡ khỏi index
+</pre></div></section>
+
+<section class="sec" id="class"><div class="sec-h"><h2>Lớp · Ứng dụng Flask</h2><span class="kind">Class</span></div>
+<p>Chia làm 3 tầng: route (blueprint) → service (logic nghiệp vụ) → gateway (Bedrock, Storage, Store). Route không gọi trực tiếp boto3. Mỗi gateway có hai hiện thực, AWS và local (dữ liệu mẫu trong bộ nhớ), nên toàn bộ luồng chạy và test được mà không cần AWS.</p>
+<div class="dg"><pre class="mermaid">
+classDiagram
+  direction LR
+  class SearchRoutes {
+    +search() Response
+    +ask() Response
+    +history() Response
+    +sessions() Response
+    +feedback() Response
+  }
+  class LibraryRoutes {
+    +list_documents() Response
+    +create_upload() Response
+    +status(doc_id) Response
+    +summarize(doc_id) Response
+    +download(doc_id) Response
+    +delete_document(doc_id) Response
+  }
+  class AdminRoutes {
+    +overview() Response
+    +kb_config() Response
+    +groups() Response
+    +jobs() Response
+  }
+  class Auth {
+    +current_user() User
+    +login_required()
+    +require_admin()
+  }
+  class RagService {
+    +search(user, query) list~Hit~
+    +ask(user, question, session_id, save, doc_id) Iterator
+    +session_messages(user, session_id) list
+    +kb_config() dict
+  }
+  class DocumentService {
+    +create_upload(user, filename, size, groups, dept) UploadTicket
+    +summarize(user, doc_id) list~str~
+    +download_url(user, doc_id) str
+    +delete(user, doc_id) bool
+    +retry(doc_id) str
+    +sync_now() str
+  }
+  class Pipeline {
+    +start_batch(store, bedrock, doc_ids) str
+    +poll_jobs(store, bedrock, enqueue) int
+  }
+  class Bedrock {
+    <<interface>>
+    +search(groups, query, top_k) list
+    +ask_stream(groups, question, session_id, top_k, guard, doc_id) Iterator
+    +summarize(doc_id) list~str~
+    +start_ingestion() str
+    +get_ingestion_job(job_id) dict
+  }
+  class Storage {
+    <<interface>>
+    +presign_put(key, content_type) str
+    +presign_get(key, filename) str
+    +put_metadata(key, attrs)
+    +delete(key)
+  }
+  class Store {
+    <<interface>>
+    +put_doc(doc)
+    +list_docs(groups, dept) list
+    +create_session(user_id, title) dict
+    +append_message(session_id, role, content, citations) dict
+    +add_query(user_id, text, result_count) dict
+    +incr_stat(name)
+  }
+  class User {
+    +id: str
+    +email: str
+    +name: str
+    +groups: tuple
+    +is_admin: bool
+  }
+  class Document {
+    +id: str
+    +title: str
+    +s3_key: str
+    +groups: list~str~
+    +status: DocStatus
+  }
+  class ChatSession {
+    +id: str
+    +user_id: str
+    +bedrock_session_id: str
+  }
+  class Message {
+    +role: str
+    +content: str
+    +rating: str
+    +citations: list~Citation~
+  }
+  class Citation {
+    +doc_id: str
+    +page: int
+    +excerpt: str
+  }
+  SearchRoutes --> Auth
+  SearchRoutes --> RagService
+  LibraryRoutes --> DocumentService
+  AdminRoutes --> RagService
+  AdminRoutes --> DocumentService
+  RagService --> Bedrock
+  RagService --> Store
+  DocumentService --> Bedrock
+  DocumentService --> Storage
+  DocumentService --> Store
+  DocumentService ..> Pipeline
+  Pipeline --> Store
+  Pipeline --> Bedrock
+  Bedrock <|.. AwsBedrock
+  Bedrock <|.. LocalBedrock
+  Storage <|.. S3Storage
+  Storage <|.. LocalStorage
+  Store <|.. DynamoStore
+  Store <|.. MemoryStore
+  ChatSession "1" *-- "many" Message
+  Message "1" *-- "0..many" Citation
+  Citation ..> Document
+  RagService ..> User
+</pre></div></section>
+
+<section class="sec" id="erd"><div class="sec-h"><h2>Mô hình dữ liệu logic</h2><span class="kind">ERD</span></div>
+<p>Mô hình quan hệ ở mức logic. Người dùng không được lưu trong ứng dụng: danh tính và nhóm lấy từ JWT của ALB (Cognito/IdP). Danh sách nhóm được xem (ACL) lưu 2 nơi: DynamoDB phục vụ UI, file <code>.metadata.json</code> (cờ <code>g_&lt;nhóm&gt;</code>) trên S3 cho bộ lọc của Knowledge Base. Phản hồi 👍/👎 là thuộc tính <code>rating</code> của tin nhắn.</p>
+<div class="dg"><pre class="mermaid">
+erDiagram
+  USER ||--o{ USER_GROUP : "thuộc"
+  GROUP ||--o{ USER_GROUP : "gồm"
+  USER ||--o{ DOCUMENT : "tải lên"
+  DOCUMENT ||--|{ DOCUMENT_ACL : "chia sẻ cho"
+  GROUP ||--o{ DOCUMENT_ACL : "được xem"
+  INGESTION_JOB ||--o{ DOCUMENT : "xử lý"
+  USER ||--o{ CHAT_SESSION : "sở hữu"
+  CHAT_SESSION ||--|{ MESSAGE : "chứa"
+  MESSAGE ||--o{ CITATION : "trích dẫn"
+  DOCUMENT ||--o{ CITATION : "được trích"
+  USER ||--o{ SEARCH_QUERY : "thực hiện"
+  USER {
+    string user_id PK "Cognito sub (không lưu)"
+    string email UK
+    string full_name
+    string role "staff | admin"
+  }
+  GROUP {
+    string name PK
+    string src "nguồn IdP"
+    int members
+  }
+  USER_GROUP {
+    string user_id FK
+    string group_name FK
+  }
+  DOCUMENT {
+    string doc_id PK
+    string title
+    string s3_key UK
+    string file_type
+    string dept
+    string status
+    string owner_id FK
+    string job_id FK
+    string size
+    int pages
+    string summary
+    datetime created_at
+    date updated_at
+  }
+  DOCUMENT_ACL {
+    string doc_id FK
+    string group_name FK
+  }
+  INGESTION_JOB {
+    string job_id PK
+    string status "IN_PROGRESS | COMPLETE | FAILED"
+    int doc_count
+    list doc_ids
+    datetime started_at
+    datetime ended_at
+  }
+  CHAT_SESSION {
+    string session_id PK
+    string user_id FK
+    string title
+    string bedrock_session_id
+    datetime created_at
+  }
+  MESSAGE {
+    string message_id PK
+    string session_id FK
+    string role "user | assistant"
+    string content
+    string rating "up | down"
+    datetime created_at
+  }
+  CITATION {
+    string message_id FK
+    string doc_id FK
+    int page
+    string excerpt
+  }
+  SEARCH_QUERY {
+    string query_id PK
+    string user_id FK
+    string text
+    int result_count
+    datetime created_at
+  }
+  DAILY_STAT {
+    string stat_name PK "queries, unanswered, feedback_up..."
+    date day PK
+    int n
+  }
+  KB_CONFIG {
+    string key PK "kb"
+    json data "topk, guard, model..."
+  }
+</pre></div></section>
+
+<section class="sec" id="ddb"><div class="sec-h"><h2>Hiện thực trên DynamoDB</h2><span class="kind">Single-table</span></div>
+<p>Mô hình logic ở trên được hiện thực trên một bảng DynamoDB (CDK tự đặt tên, truyền vào biến <code>TABLE_NAME</code>), khoá theo các truy vấn mà UI cần. Bảng dùng KMS khoá riêng, bật point-in-time recovery và TTL trên thuộc tính <code>ttl</code>. Người dùng không có item riêng vì danh tính lấy từ JWT.</p>
+<div class="tbl"><table>
+<thead><tr><th>Thực thể</th><th>PK</th><th>SK</th><th>Thuộc tính chính</th></tr></thead>
+<tbody>
+<tr><td>Document</td><td><code>DOC#{doc_id}</code></td><td><code>META</code></td><td>title, s3_key, type, dept, groups[], status, owner_id, job_id, size, pages, summary[], created_at, updated_at</td></tr>
+<tr><td>Document ACL</td><td><code>DOC#{doc_id}</code></td><td><code>ACL#{group}</code></td><td>doc_id; GSI1PK=<code>GROUP#{group}</code>, GSI1SK=<code>DOC#{updated_at}#{doc_id}</code></td></tr>
+<tr><td>Ingestion job</td><td><code>JOB#{job_id}</code></td><td><code>META</code></td><td>status, doc_count, doc_ids[], started_at, ended_at; GSI2PK=<code>JOBSTATUS#{status}</code>, GSI2SK=started_at</td></tr>
+<tr><td>Chat session</td><td><code>USER#{user_id}</code></td><td><code>SESSION#{session_id}</code></td><td>title, bedrock_session_id, created_at (session_id sắp xếp được theo thời gian)</td></tr>
+<tr><td>Message</td><td><code>SESSION#{session_id}</code></td><td><code>MSG#{message_id}</code></td><td>role, content, citations[] (nhúng), rating</td></tr>
+<tr><td>Search query</td><td><code>USER#{user_id}</code></td><td><code>QUERY#{query_id}</code></td><td>text, result_count; TTL 90 ngày</td></tr>
+<tr><td>Group</td><td><code>GROUP#{name}</code></td><td><code>META</code></td><td>members, src; GSI2PK=<code>GROUPS</code>, GSI2SK=name</td></tr>
+<tr><td>KB config</td><td><code>CONFIG#kb</code></td><td><code>META</code></td><td>data (JSON: topk, guard, model, chunk...)</td></tr>
+<tr><td>Daily stat</td><td><code>STAT#{name}</code></td><td><code>DAY#{yyyy-mm-dd}</code></td><td>n (bộ đếm, cập nhật bằng ADD)</td></tr>
+</tbody></table></div>
+<h3>Mẫu truy cập</h3>
+<div class="tbl" style="margin-top:12px"><table>
+<thead><tr><th>Màn hình</th><th>Truy vấn</th><th>Cách đọc</th></tr></thead>
+<tbody>
+<tr><td>Thư viện</td><td>Tài liệu các nhóm của tôi, mới nhất trước</td><td>Query GSI1 <code>GROUP#X</code> cho từng nhóm, gộp doc_id rồi GetItem <code>META</code></td></tr>
+<tr><td>Xem trước</td><td>Chi tiết một tài liệu</td><td>GetItem <code>DOC#{id}</code> + <code>META</code>, kiểm tra giao nhóm</td></tr>
+<tr><td>Chat</td><td>Danh sách phiên của tôi</td><td>Query <code>USER#{me}</code>, SK begins_with <code>SESSION#</code>, mới nhất trước</td></tr>
+<tr><td>Chat</td><td>Tin nhắn của một phiên</td><td>Query <code>SESSION#{id}</code>, SK begins_with <code>MSG#</code></td></tr>
+<tr><td>Lịch sử</td><td>Tìm kiếm gần đây của tôi</td><td>Query <code>USER#{me}</code>, SK begins_with <code>QUERY#</code></td></tr>
+<tr><td>Quản trị</td><td>Job theo trạng thái</td><td>Query GSI2 <code>JOBSTATUS#IN_PROGRESS</code> (và COMPLETE, FAILED)</td></tr>
+<tr><td>Quản trị</td><td>Danh sách nhóm</td><td>Query GSI2 <code>GROUPS</code>, đếm tài liệu bằng Query GSI1 với Select=COUNT</td></tr>
+<tr><td>Quản trị</td><td>Tổng quan 28 ngày</td><td>Query <code>STAT#{name}</code>, SK between <code>DAY#...</code>; đếm tài liệu theo trạng thái bằng Scan có lọc (tần suất thấp)</td></tr>
+</tbody></table></div>
+<div class="notes">
+<div><b>Citation nhúng trong Message</b>Citation luôn được đọc cùng tin nhắn nên lưu dạng mảng, giới hạn 400 KB/item là quá đủ.</div>
+<div><b>TTL</b>SEARCH_QUERY tự xoá sau 90 ngày, đúng với cam kết "Lưu 90 ngày" trên UI.</div>
+<div><b>Nguồn sự thật ACL</b>Thu hồi quyền có hiệu lực ngay ở UI (đọc DynamoDB), nhưng cờ nhóm trong <code>.metadata.json</code> chỉ cập nhật khi tài liệu được ghi lại và Knowledge Base đồng bộ. Hiện chưa có chức năng đổi nhóm sau khi tải lên.</div>
+<div><b>Thống kê</b>Bộ đếm theo ngày được tăng trực tiếp bằng UpdateItem ADD khi có truy vấn, phản hồi hoặc câu hỏi không tìm thấy nguồn; không dùng DynamoDB Streams.</div>
+</div></section>
+</main></div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({startOnLoad:false,securityLevel:'loose',theme:'base',fontFamily:"'Be Vietnam Pro',sans-serif",
+ themeVariables:{fontFamily:"'Be Vietnam Pro',sans-serif",fontSize:'14px',primaryColor:'#fffdfa',primaryBorderColor:'#d0662f',primaryTextColor:'#1d1a17',secondaryColor:'#fbece2',tertiaryColor:'#f8f6f2',lineColor:'#857e75',textColor:'#1d1a17',
+  actorBkg:'#fbece2',actorBorder:'#d0662f',actorTextColor:'#1d1a17',signalColor:'#57514a',signalTextColor:'#1d1a17',labelBoxBkgColor:'#fbece2',labelBoxBorderColor:'#d0662f',loopTextColor:'#57514a',noteBkgColor:'#f2eee8',noteBorderColor:'#e6e0d7',activationBkgColor:'#fbece2',
+  clusterBkg:'#f8f6f2',clusterBorder:'#e6e0d7',edgeLabelBackground:'#fffdfa',attributeBackgroundColorOdd:'#fffdfa',attributeBackgroundColorEven:'#f8f6f2'},
+ sequence:{mirrorActors:false,actorMargin:24,width:130,messageFontSize:13,wrap:true},er:{layoutDirection:'TB'},flowchart:{curve:'basis'}});
+document.fonts.ready.then(()=>mermaid.run({querySelector:'.mermaid'})).then(()=>document.querySelectorAll('.dg svg').forEach(s=>{const w=parseFloat(s.style.maxWidth)||s.viewBox.baseVal.width;s.style.width=w+'px';s.style.maxWidth='none';s.style.minWidth=w+'px';}));
+const links=[...document.querySelectorAll('.toc a[href^="#"]')];
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)links.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id))}),{rootMargin:'-30% 0px -60% 0px'});
+document.querySelectorAll('.sec').forEach(s=>io.observe(s));
+</script>
+</body></html>

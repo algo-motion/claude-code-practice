@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kiến trúc AWS — Tra Cứu AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f8f6f2;--panel:#fffdfa;--sunk:#f2eee8;--ink:#1d1a17;--ink2:#57514a;--ink3:#857e75;--line:#e6e0d7;--line2:#efeae3;--acc:#d0662f;--acc-ink:#a64b1b;--acc-soft:#fbece2;--mono:'JetBrains Mono',ui-monospace,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 'Be Vietnam Pro',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--acc-ink)}a:hover{color:var(--ink)}h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.02em;text-wrap:pretty}p{margin:0;text-wrap:pretty}
+.wrap{max-width:1280px;margin:0 auto;padding:48px 40px 80px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:32px}.top h1{font-size:34px}.top p{color:var(--ink2);max-width:640px;margin-top:8px}
+.eyebrow{font-size:13px;font-weight:600;color:var(--acc-ink);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px}
+.seg{display:inline-flex;background:var(--sunk);border-radius:10px;padding:4px;gap:2px}.seg button{font:inherit;font-size:14px;font-weight:500;border:0;background:none;padding:8px 14px;border-radius:7px;cursor:pointer;color:var(--ink2)}.seg button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.diagram{display:grid;grid-template-columns:minmax(0,.9fr) 28px minmax(0,1fr) 28px minmax(0,1.25fr) 28px minmax(0,1fr);align-items:stretch;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px}
+.zone{border:1px dashed #d8cec1;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}.zone.vpc{border-style:solid;border-color:#e3d3c4;background:#fdf8f3}.zone.ai{background:var(--acc-soft);border:1px solid #f1d4c1}
+.zt{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);display:flex;justify-content:space-between}
+.sub{border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;gap:8px;background:var(--panel)}.sub .zt{font-size:10px}
+.node{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:2px;transition:opacity .25s,border-color .25s,box-shadow .25s;position:relative}
+.node b{font-size:14px;font-weight:600;line-height:1.3}.node span{font-size:12px;color:var(--ink2);line-height:1.45}
+.node .n{position:absolute;top:-8px;right:-8px;display:flex;gap:3px}.node .n i{font:600 10px/18px var(--mono);font-style:normal;width:18px;height:18px;text-align:center;border-radius:50%;background:var(--acc);color:#fff}
+.arrow{display:grid;place-items:center;color:#c9bcad;font-size:18px}
+.diagram[data-flow] .node{opacity:.32}.diagram[data-flow="q"] .node.q,.diagram[data-flow="i"] .node.i{opacity:1;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
+.diagram:not([data-flow]) .node .n,.diagram[data-flow="q"] .node .n.i,.diagram[data-flow="i"] .node .n.q{display:none}
+.ops{grid-column:1/-1;margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-top:1px solid var(--line2);padding-top:16px}.ops .zt{margin-right:8px}.tag{font-size:13px;padding:5px 11px;border-radius:7px;background:var(--sunk);color:var(--ink2)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:20px;margin-top:20px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px 26px}.card h2{font-size:19px;margin-bottom:16px}
+ol.steps{list-style:none;margin:0;padding:0;display:grid;gap:14px;counter-reset:s}ol.steps li{display:grid;grid-template-columns:26px 1fr;gap:12px;counter-increment:s;font-size:14px;color:var(--ink2)}ol.steps li:before{content:counter(s);font:600 12px/26px var(--mono);text-align:center;width:26px;height:26px;border-radius:50%;background:var(--acc-soft);color:var(--acc-ink)}ol.steps b{color:var(--ink);font-weight:600}
+.dec{display:grid;gap:0}.dec div{display:grid;grid-template-columns:150px 1fr;gap:16px;padding:12px 0;border-top:1px solid var(--line2);font-size:14px}.dec div:first-child{border-top:0;padding-top:0}.dec b{font-weight:600}.dec span{color:var(--ink2)}
+pre{margin:0;background:#1d1a17;color:#ece5dc;border-radius:10px;padding:18px 20px;font:12.5px/1.65 var(--mono);overflow:auto}pre .c{color:#8f877d}pre .s{color:#f0a57d}pre .k{color:#9fc6a8}
+.tree{background:var(--sunk);color:var(--ink);font-size:12.5px}
+.note{margin-top:14px;font-size:13px;color:var(--ink2);padding:12px 14px;border-radius:10px;background:var(--sunk)}
+@media (max-width:1000px){.diagram{grid-template-columns:1fr}.arrow{transform:rotate(90deg);height:24px}}
+</style></head>
+<body><div class="wrap">
+<div class="top"><div><div class="eyebrow">Tra Cứu AI · Kiến trúc (khớp mã nguồn)</div><h1>Kiến trúc trên AWS</h1><p>Toàn bộ chạy trên AWS: web app Flask chạy trên ECS Fargate, phần RAG dùng Amazon Bedrock Knowledge Bases (chia đoạn, embedding, truy xuất và trích dẫn nguồn do Bedrock quản lý) với kho vector là S3 Vectors. Quyền truy cập theo nhóm được áp dụng bằng bộ lọc metadata ngay lúc truy xuất. Bản này đã bỏ các khoản chi phí cố định lớn (OpenSearch Serverless, NAT gateway) và hạ tầng được dựng bằng AWS CDK trong thư mục <code>infra/</code>. <a href="Tra Cuu AI.html">← Về prototype</a> · <a href="Thiet ke UML.html">Sơ đồ UML →</a></p></div>
+<div class="seg" id="seg"><button class="on" data-f="">Tất cả</button><button data-f="q">Luồng hỏi đáp</button><button data-f="i">Luồng nạp tài liệu</button></div></div>
+
+<div class="diagram" id="dg">
+<div class="zone"><div class="zt">Biên &amp; định danh</div>
+<div class="node q i"><b>Người dùng nội bộ</b><span>Trình duyệt, mạng công ty / VPN</span><div class="n q"><i>1</i></div><div class="n i"><i>1</i></div></div>
+<div class="node q i"><b>ACM + Route 53</b><span>Chứng chỉ TLS cho domain; Route 53 tạo bản ghi A nếu cung cấp hosted zone</span></div>
+<div class="node q i"><b>AWS WAF (gắn vào ALB)</b><span>Managed rules, giới hạn tốc độ theo IP, tuỳ chọn chỉ cho phép IP công ty</span><div class="n q"><i>2</i></div></div>
+<div class="node q i"><b>Amazon Cognito</b><span>Liên kết SSO (SAML) với IdP công ty, MFA bắt buộc; nhóm đi trong claim <code>custom:groups</code></span><div class="n q"><i>1</i></div></div>
+</div>
+<div class="arrow">→</div>
+<div class="zone vpc"><div class="zt">VPC · ap-southeast-1 · chỉ subnet public, không NAT</div>
+<div class="sub"><div class="zt">Public subnet · 2 AZ</div>
+<div class="node q i"><b>Application Load Balancer</b><span>HTTPS; xác thực Cognito cho trang, trả 401 cho <code>/api/*</code> khi hết phiên; <code>/healthz</code> không cần đăng nhập</span></div>
+<div class="node q i"><b>ECS Fargate · Flask</b><span>Gunicorn + gevent, SSE streaming, boto3; auto scaling; IP công khai nhưng security group chỉ nhận traffic từ ALB</span><div class="n q"><i>3</i></div><div class="n i"><i>2</i></div></div>
+<div class="node q i"><b>Gateway endpoint</b><span>S3 và DynamoDB (miễn phí). Bedrock được gọi qua Internet bằng TLS</span></div></div>
+</div>
+<div class="arrow">→</div>
+<div class="zone ai"><div class="zt">Amazon Bedrock · AI</div>
+<div class="node q i"><b>Bedrock Knowledge Bases</b><span>RetrieveAndGenerate (stream), chia đoạn ngữ nghĩa, trả về trích dẫn</span><div class="n q"><i>4</i></div><div class="n i"><i>5</i></div></div>
+<div class="node q i"><b>Titan Text Embeddings V2</b><span>Vector 1024 chiều, đa ngôn ngữ, hỗ trợ tiếng Việt</span><div class="n i"><i>5</i></div></div>
+<div class="node q i"><b>S3 Vectors</b><span>Kho vector tính phí theo mức dùng; tìm kiếm ngữ nghĩa, lọc theo cờ nhóm</span><div class="n q"><i>5</i></div></div>
+<div class="node q"><b>Claude trên Bedrock</b><span>Sinh câu trả lời có trích dẫn; tóm tắt tài liệu</span><div class="n q"><i>6</i></div></div>
+<div class="node q"><b>Bedrock Guardrails</b><span>Lọc nội dung, chặn prompt injection, che số thẻ, mật khẩu và CCCD</span><div class="n q"><i>6</i></div></div>
+</div>
+<div class="arrow">↔</div>
+<div class="zone"><div class="zt">Dữ liệu &amp; pipeline</div>
+<div class="node i"><b>S3 · kho tài liệu</b><span>SSE-KMS, versioning; mỗi tệp kèm .metadata.json (doc_id + cờ <code>g_&lt;nhóm&gt;</code>)</span><div class="n i"><i>3</i></div></div>
+<div class="node i"><b>EventBridge + SQS + Lambda</b><span>S3 → EventBridge → SQS (gom lô 60 giây) → Lambda StartIngestionJob; Lambda poll mỗi phút</span><div class="n i"><i>4</i></div></div>
+<div class="node i"><b>SQS + Lambda tóm tắt</b><span>Tạo tóm tắt bất đồng bộ bằng Claude sau khi tài liệu được lập chỉ mục</span><div class="n i"><i>6</i></div></div>
+<div class="node q i"><b>DynamoDB</b><span>Metadata tài liệu, lịch sử tìm kiếm, phiên chat, phản hồi, bộ đếm thống kê</span><div class="n q"><i>7</i></div><div class="n i"><i>6</i></div></div>
+</div>
+<div class="ops"><span class="zt">Bảo mật &amp; vận hành</span><span class="tag">KMS (xoay khoá)</span><span class="tag">IAM task role (least privilege)</span><span class="tag">CloudWatch Logs + Container Insights</span><span class="tag">ECR (CDK build image)</span><span class="tag">AWS CDK (Python)</span></div>
+<p class="note" style="grid-column:1/-1">Chưa triển khai so với đề xuất ban đầu: CloudFront, CodePipeline, X-Ray, CloudTrail và Bedrock invocation logging (hai mục sau là cấu hình cấp tài khoản).</p>
+</div>
+
+<div class="cols">
+<div class="card"><h2>Luồng hỏi đáp</h2><ol class="steps">
+<li><span><b>Đăng nhập SSO</b> qua Cognito (liên kết với IdP công ty). Nhóm của người dùng nằm trong claim <code>custom:groups</code>.</span></li>
+<li><span>Request đi qua <b>WAF → ALB</b>. ALB xác thực phiên rồi chuyển tới Flask kèm header <code>x-amzn-oidc-data</code> (JWT do ALB ký).</span></li>
+<li><span><b>Flask</b> kiểm tra chữ ký JWT, đọc nhóm rồi dựng bộ lọc metadata. Người dùng chỉ truy xuất được tài liệu mình có quyền xem.</span></li>
+<li><span>Flask gọi <b>RetrieveAndGenerate</b> (dạng stream). Knowledge Base tạo embedding cho câu hỏi.</span></li>
+<li><span>Tìm kiếm ngữ nghĩa trên <b>S3 Vectors</b> với bộ lọc nhóm, lấy top-k đoạn liên quan nhất (k cấu hình ở trang Quản trị).</span></li>
+<li><span><b>Claude</b> sinh câu trả lời kèm trích dẫn, đi qua <b>Guardrails</b>. Kết quả stream về trình duyệt bằng SSE (<code>meta</code>, <code>delta</code>, <code>citations</code>, <code>done</code>).</span></li>
+<li><span>Lưu tin nhắn kèm nguồn trích dẫn và phản hồi Hữu ích/Chưa tốt vào <b>DynamoDB</b> cho màn hình chat và thống kê. Câu trả lời ở trang tìm kiếm không tạo phiên chat.</span></li>
+</ol></div>
+<div class="card"><h2>Luồng nạp tài liệu</h2><ol class="steps">
+<li><span>Người dùng kéo thả tệp ở màn hình Thư viện và chọn nhóm được xem.</span></li>
+<li><span>Flask kiểm tra quyền và loại tệp (tối đa 50 MB), tạo <b>presigned URL</b>. Trình duyệt upload thẳng lên S3, không đi qua container.</span></li>
+<li><span>Flask ghi tệp <b>.metadata.json</b> (<code>doc_id</code> và cờ <code>g_&lt;nhóm&gt;</code> cho từng nhóm được chọn) cạnh tài liệu trên S3.</span></li>
+<li><span>Sự kiện S3 → <b>EventBridge → SQS</b> (gom lô 60 giây) → Lambda <code>ingest_trigger</code> gọi StartIngestionJob cho cả lô.</span></li>
+<li><span>Knowledge Base parse nội dung, chia đoạn, tạo embedding bằng <b>Titan V2</b> và ghi vào S3 Vectors.</span></li>
+<li><span>Lambda <code>poll_jobs</code> (mỗi phút) cập nhật trạng thái job và tài liệu vào <b>DynamoDB</b> (UI hiện tiến trình), rồi đẩy việc tóm tắt vào SQS.</span></li>
+</ol></div>
+</div>
+
+<div class="cols">
+<div class="card"><h2>Truy vấn có phân quyền · Flask + boto3</h2>
+<pre><span class="c"># app/services/bedrock.py</span>
+<span class="k">def</span> group_filter(groups):
+    f = [{<span class="s">"equals"</span>: {<span class="s">"key"</span>: group_key(g), <span class="s">"value"</span>: <span class="k">True</span>}} <span class="k">for</span> g <span class="k">in</span> groups]
+    <span class="k">return</span> f[0] <span class="k">if</span> len(f) == 1 <span class="k">else</span> {<span class="s">"orAll"</span>: f}
+
+<span class="c"># app/search/routes.py</span>
+<span class="k">@bp.post</span>(<span class="s">"/api/ask"</span>)
+<span class="k">@login_required</span>
+<span class="k">def</span> ask():
+    q, err = read_question()        <span class="c"># 1–2000 ký tự, 30 request/phút/người dùng</span>
+    user = current_user()           <span class="c"># nhóm lấy từ JWT của ALB</span>
+    events = rag.ask(user, q, session_id, save, doc_id)
+    <span class="k">return</span> Response(sse(events), mimetype=<span class="s">"text/event-stream"</span>)
+
+<span class="c"># AwsBedrock.ask_stream</span>
+resp = agent_rt.retrieve_and_generate_stream(
+    input={<span class="s">"text"</span>: q},
+    retrieveAndGenerateConfiguration={
+        <span class="s">"type"</span>: <span class="s">"KNOWLEDGE_BASE"</span>,
+        <span class="s">"knowledgeBaseConfiguration"</span>: {
+            <span class="s">"knowledgeBaseId"</span>: cfg.KB_ID,
+            <span class="s">"modelArn"</span>: cfg.MODEL_ARN,
+            <span class="s">"retrievalConfiguration"</span>: {<span class="s">"vectorSearchConfiguration"</span>: {
+                <span class="s">"numberOfResults"</span>: top_k,
+                <span class="s">"overrideSearchType"</span>: <span class="s">"SEMANTIC"</span>,
+                <span class="s">"filter"</span>: group_filter(user.groups),
+            }},
+            <span class="s">"generationConfiguration"</span>: {<span class="s">"guardrailConfiguration"</span>: {...}},
+        },
+    },
+)</pre>
+<p class="note">Bộ lọc nhóm luôn được dựng ở server từ token đã xác thực, không bao giờ lấy từ dữ liệu client gửi lên. Mỗi nhóm là một cờ boolean riêng (<code>g_</code> + băm tên nhóm) vì toán tử <code>listContains</code> trên danh sách nhóm chỉ OpenSearch hỗ trợ, còn <code>equals</code> chạy trên mọi kho vector.</p></div>
+<div class="card"><h2>Cấu trúc dự án</h2>
+<pre class="tree">tracuu-ai/
+├─ app/                  <span class="c"># Flask API</span>
+│  ├─ __init__.py        <span class="c"># create_app(); import Flask nằm trong hàm để Lambda dùng chung gói</span>
+│  ├─ auth/              <span class="c"># đọc JWT của ALB, nhóm, rate limit</span>
+│  ├─ search/            <span class="c"># /api/search, /api/ask (SSE), lịch sử, chat, phản hồi</span>
+│  ├─ library/           <span class="c"># presigned upload, trạng thái, tóm tắt, tải xuống</span>
+│  ├─ admin/             <span class="c"># thống kê, cấu hình KB, nhóm, ingestion job</span>
+│  └─ services/
+│     ├─ bedrock.py      <span class="c"># AwsBedrock / LocalBedrock</span>
+│     ├─ rag.py          <span class="c"># RagService: tìm kiếm, hỏi đáp, phiên chat</span>
+│     ├─ documents.py    <span class="c"># DocumentService: upload, xoá, tóm tắt</span>
+│     ├─ pipeline.py     <span class="c"># start_batch, poll_jobs (Lambda + API dùng chung)</span>
+│     ├─ acl.py          <span class="c"># cờ nhóm trong metadata</span>
+│     ├─ storage.py      <span class="c"># S3Storage / LocalStorage</span>
+│     └─ store.py        <span class="c"># DynamoStore / MemoryStore</span>
+├─ lambdas/              <span class="c"># ingest_trigger, poll_jobs, summarize</span>
+├─ infra/                <span class="c"># AWS CDK (Python): data, rag, auth, ingest, web</span>
+├─ src/                  <span class="c"># giao diện React + Vite</span>
+├─ Dockerfile            <span class="c"># gunicorn -k gevent, build giao diện cùng image</span>
+└─ tests/</pre></div>
+</div>
+
+<div class="card" style="margin-top:20px"><h2>Các quyết định chính</h2><div class="dec">
+<div><b>Knowledge Bases</b><span>Dùng bản managed thay vì tự build RAG. Bedrock lo chia đoạn, đồng bộ, trích dẫn và lọc metadata, nên giảm phần lớn code pipeline. Khi cần tuỳ biến sâu vẫn có thể chuyển sang tự gọi Retrieve rồi tự sinh câu trả lời.</span></div>
+<div><b>Vector store</b><span>Chọn S3 Vectors thay cho OpenSearch Serverless vì tính phí theo mức dùng, không có mức nền hàng tháng. Đánh đổi: chỉ có tìm kiếm ngữ nghĩa, không hybrid với từ khoá, nên tên riêng và mã số tiếng Việt khớp kém hơn. Cần hybrid thì đổi lại OpenSearch và đặt <code>SEARCH_TYPE=HYBRID</code>.</span></div>
+<div><b>Mạng</b><span>Chỉ dùng subnet public, không NAT gateway và không interface endpoint (hai thứ này tính phí theo giờ). Task Fargate có IP công khai nhưng security group chỉ cho ALB vào; S3 và DynamoDB đi qua gateway endpoint miễn phí. Đổi lại lưu lượng tới Bedrock đi qua Internet bằng TLS.</span></div>
+<div><b>Fargate cho Flask</b><span>Chọn Fargate thay vì Lambda vì cần kết nối SSE dài cho streaming, không bị cold start và đóng gói Docker đơn giản.</span></div>
+<div><b>Phân quyền</b><span>Nhóm lấy từ IdP qua Cognito, áp dụng bằng cờ metadata theo nhóm lúc truy xuất. Thu hồi quyền có hiệu lực ngay trên DynamoDB, nhưng cờ trong <code>.metadata.json</code> chỉ cập nhật sau lần đồng bộ Knowledge Base kế tiếp.</span></div>
+<div><b>Region</b><span>ap-southeast-1 cho độ trễ thấp. Cần kiểm tra Knowledge Base, S3 Vectors và model Claude khả dụng tại region; nếu thiếu model thì dùng cross-region inference profile (truyền vào <code>model_arn</code>).</span></div>
+</div></div>
+</div>
+<script>
+const dg=document.getElementById('dg');document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#seg button').forEach(x=>x.classList.toggle('on',x===b));b.dataset.f?dg.setAttribute('data-flow',b.dataset.f):dg.removeAttribute('data-flow');});
+</script>
+</body></html>
