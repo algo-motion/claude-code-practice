@@ -14,7 +14,7 @@ class Settings:
     domain_name: str                 # tên miền của ứng dụng, ví dụ tracuu.congty.vn
     certificate_arn: str             # chứng chỉ ACM (cùng region với ALB) cho domain_name
     model_arn: str                   # ARN model/inference profile Claude đã bật trong Bedrock
-    embedding_model_id: str = "amazon.titan-embed-text-v2:0"
+    embedding_model_id: str = "cohere.embed-multilingual-v3"  # Titan V2 không có ở ap-southeast-1
     cognito_prefix: str = ""         # tiền tố domain Cognito; rỗng thì dùng tracuu-<account>
     hosted_zone_id: str = ""         # nếu có cả hai, tạo bản ghi A alias cho domain_name
     hosted_zone_name: str = ""

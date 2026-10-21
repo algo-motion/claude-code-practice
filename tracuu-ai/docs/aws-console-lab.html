@@ -1,0 +1,846 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lab dựng Tra Cứu AI trên AWS Console</title>
+<style>
+:root{--bg:#f8f6f2;--panel:#fffdfa;--sunk:#f2eee8;--ink:#1d1a17;--ink2:#57514a;--line:#e6e0d7;--acc:#a64b1b;--acc-soft:#fbece2;
+--free:#2c7650;--free-bg:#e5f1e9;--use:#2f5481;--use-bg:#e8f0fb;--paid:#a64b1b;--paid-bg:#fbece2;--warn-bg:#fff3c4;--warn-line:#d9a400;
+--code-bg:#1d1a17;--code-ink:#ece5dc}
+@media (prefers-color-scheme:dark){:root{--bg:#161412;--panel:#1e1b18;--sunk:#2a2622;--ink:#efe9e1;--ink2:#b9b0a5;--line:#3a352f;--acc:#f0a57d;--acc-soft:#3a2418;
+--free:#7fcf9f;--free-bg:#1c3326;--use:#9dc0ee;--use-bg:#1a2a40;--paid:#f0a57d;--paid-bg:#3a2418;--warn-bg:#3d3200;--warn-line:#d9a400;--code-bg:#0f0e0d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 system-ui,'Segoe UI',sans-serif}
+main{max-width:1000px;margin:0 auto;padding:40px 20px 80px}
+h1{font-size:30px;letter-spacing:-.02em;margin:0 0 8px}h2{font-size:23px;margin:48px 0 12px;padding-top:12px;border-top:2px solid var(--line)}
+h3{font-size:18px;margin:0 0 8px}h4{font-size:14px;margin:14px 0 4px;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em}
+p{margin:8px 0}ul,ol{padding-left:22px}li{margin:4px 0}
+code{font:13px ui-monospace,Consolas,monospace;background:var(--sunk);padding:1px 5px;border-radius:4px}
+pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;overflow:auto;font:12.5px/1.6 ui-monospace,Consolas,monospace;margin:8px 0}
+pre code{background:none;padding:0;color:inherit}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:12px 0}th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--sunk);font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2)}
+.scroll{overflow-x:auto}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
+.free{background:var(--free-bg);color:var(--free)}.use{background:var(--use-bg);color:var(--use)}.paid{background:var(--paid-bg);color:var(--paid)}
+.alert{background:var(--warn-bg);border:2px solid var(--warn-line);border-radius:10px;padding:14px 18px;margin:16px 0}
+.alert b.t{display:block;font-size:16px;margin-bottom:4px}
+.note{background:var(--sunk);border-radius:10px;padding:12px 16px;margin:12px 0;font-size:14px;color:var(--ink2)}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:16px 0}
+.step>h3{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.step>h3 .id{font:600 12px ui-monospace,monospace;background:var(--acc-soft);color:var(--acc);padding:3px 8px;border-radius:6px}
+details.how{border:1px solid var(--line);border-radius:8px;margin:10px 0;background:var(--bg)}
+details.how>summary{cursor:pointer;padding:8px 12px;font-weight:600;font-size:14px}details.how>div{padding:2px 14px 10px}
+.why{border-left:3px solid var(--acc);padding:2px 0 2px 12px;margin:10px 0;color:var(--ink2);font-size:14px}
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin:14px 0;color:var(--ink)}.diagram svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+nav.toc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 18px;margin:20px 0;columns:2;column-gap:30px;font-size:14px}nav.toc a{color:var(--acc);text-decoration:none;display:block;padding:2px 0}
+a{color:var(--acc)}
+@media(max-width:640px){nav.toc{columns:1}}
+</style>
+</head>
+<body>
+<main>
+
+<h1>Lab: dựng Tra Cứu AI trên AWS Console</h1>
+<p class="note">Bài thực hành tự tay tạo từng tài nguyên bằng giao diện web (console), có lệnh AWS CLI tương ứng để đối chiếu. Mục tiêu là hiểu <b>vì sao</b> mỗi cài đặt tồn tại. Giao diện console và tên lệnh CLI thay đổi theo thời gian: nếu thấy khác, đọc phần giải thích ý nghĩa rồi tìm đúng ô tương đương, và dùng <code>aws &lt;dịch vụ&gt; help</code> để kiểm tra tham số.</p>
+
+<nav class="toc">
+<a href="#tong-quan">1. Khái quát bài lab</a><a href="#chi-phi">2. Gán nhãn chi phí</a>
+<a href="#canh-bao">3. Cảnh báo nâng gói trả phí</a><a href="#chuan-bi">4. Chuẩn bị</a>
+<a href="#giai-doan-a">5. Giai đoạn A: dữ liệu và RAG</a><a href="#giai-doan-b">6. Giai đoạn B: pipeline nạp tài liệu</a>
+<a href="#giai-doan-c">7. Giai đoạn C: đăng nhập và ứng dụng web</a><a href="#ket-thuc">8. Kết thúc, đối chiếu và dọn dẹp</a>
+</nav>
+
+<!-- ============================================================ 1 -->
+<h2 id="tong-quan">1. Khái quát bài lab</h2>
+<p><b>Nội dung.</b> Bạn dựng bằng tay toàn bộ môi trường cho ứng dụng Tra Cứu AI (mã nguồn trong thư mục <code>tracuu-ai/</code>): kho tài liệu, kho vector, Bedrock Knowledge Base để tìm và trả lời có trích dẫn nguồn, pipeline tự lập chỉ mục khi có tệp mới, đăng nhập bằng Cognito và ứng dụng Flask chạy trên Fargate sau ALB.</p>
+<p><b>Đối tượng.</b> Người mới học AWS, đã biết khái niệm cơ bản (region, IAM). Bài chia ba giai đoạn để bạn có thể dừng sau giai đoạn A hoặc B mà vẫn có kết quả chạy được.</p>
+<p><b>Sau bài lab bạn đạt được:</b></p>
+<ul>
+<li>Giai đoạn A: hỏi được tài liệu trong màn hình <i>Test knowledge base</i> của Bedrock, và chứng minh được phân quyền theo nhóm (người nhóm khác không thấy tài liệu). <b>Không cần tên miền.</b></li>
+<li>Giai đoạn B: tải tệp lên S3 thì tự được lập chỉ mục, trạng thái tài liệu cập nhật trong DynamoDB. <b>Không cần tên miền.</b></li>
+<li>Giai đoạn C: truy cập ứng dụng qua <code>https://tên-miền</code>, đăng nhập SSO với MFA và dùng đủ chức năng. <b>Cần tên miền và chứng chỉ ACM</b> vì ALB chỉ xác thực Cognito qua HTTPS.</li>
+</ul>
+
+<h3>Kiến trúc</h3>
+<div class="diagram"><svg viewBox="0 0 830 500" role="img" aria-label="Sơ đồ kiến trúc Tra Cứu AI" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+<rect x="190" y="80" width="170" height="190" rx="10" fill="none" stroke="currentColor" stroke-dasharray="5 4" opacity=".45"/><text x="198" y="94" font-size="11" fill="currentColor" opacity=".7">VPC mặc định · subnet public</text>
+<rect x="410" y="20" width="190" height="395" rx="10" fill="none" stroke="currentColor" stroke-dasharray="5 4" opacity=".45"/><text x="418" y="34" font-size="11" fill="currentColor" opacity=".7">Amazon Bedrock</text>
+<rect x="630" y="20" width="180" height="465" rx="10" fill="none" stroke="currentColor" stroke-dasharray="5 4" opacity=".45"/><text x="638" y="34" font-size="11" fill="currentColor" opacity=".7">Dữ liệu và pipeline</text>
+<line x1="80" y1="90" x2="80" y2="130" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<line x1="140" y1="146" x2="210" y2="135" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<line x1="234" y1="150" x2="121" y2="220" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<line x1="275" y1="150" x2="275" y2="200" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<line x1="319" y1="200" x2="465" y2="100" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<line x1="505" y1="100" x2="505" y2="125" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<line x1="505" y1="100" x2="505" y2="205" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<line x1="505" y1="100" x2="505" y2="275" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<line x1="505" y1="325" x2="505" y2="350" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<line x1="340" y1="251" x2="650" y2="350" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<line x1="340" y1="206" x2="658" y2="90" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<line x1="720" y1="90" x2="720" y2="120" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<line x1="720" y1="165" x2="720" y2="195" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<line x1="720" y1="240" x2="720" y2="270" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<line x1="696" y1="270" x2="532" y2="100" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<line x1="720" y1="320" x2="720" y2="350" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<line x1="275" y1="310" x2="275" y2="260" stroke="currentColor" stroke-width="1.3" opacity=".7" marker-end="url(#ar)"/>
+<rect x="20" y="40" width="120" height="50" rx="8" fill="#f2eee8" stroke="#857e75" stroke-width="1.5"/>
+<text x="80.0" y="69" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">Người dùng</text>
+<rect x="20" y="130" width="120" height="50" rx="8" fill="#fbece2" stroke="#a64b1b" stroke-width="1.5"/>
+<text x="80.0" y="159" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">WAF</text>
+<rect x="20" y="220" width="120" height="50" rx="8" fill="#e8f0fb" stroke="#2f5481" stroke-width="1.5"/>
+<text x="80.0" y="249" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">Cognito</text>
+<rect x="210" y="100" width="130" height="50" rx="8" fill="#fbece2" stroke="#a64b1b" stroke-width="1.5"/>
+<text x="275.0" y="129" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">ALB</text>
+<rect x="210" y="200" width="130" height="60" rx="8" fill="#fbece2" stroke="#a64b1b" stroke-width="1.5"/>
+<text x="275.0" y="226" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">ECS Fargate</text>
+<text x="275.0" y="242" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">Flask</text>
+<rect x="210" y="310" width="130" height="45" rx="8" fill="#e8f0fb" stroke="#2f5481" stroke-width="1.5"/>
+<text x="275.0" y="336" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">ECR</text>
+<rect x="430" y="45" width="150" height="55" rx="8" fill="#e5f1e9" stroke="#2c7650" stroke-width="1.5"/>
+<text x="505.0" y="69" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">Bedrock</text>
+<text x="505.0" y="84" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">Knowledge Base</text>
+<rect x="430" y="125" width="150" height="55" rx="8" fill="#e8f0fb" stroke="#2f5481" stroke-width="1.5"/>
+<text x="505.0" y="149" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">Cohere Embed</text>
+<text x="505.0" y="164" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">Multilingual v3</text>
+<rect x="430" y="205" width="150" height="45" rx="8" fill="#e8f0fb" stroke="#2f5481" stroke-width="1.5"/>
+<text x="505.0" y="232" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">S3 Vectors</text>
+<rect x="430" y="275" width="150" height="50" rx="8" fill="#e8f0fb" stroke="#2f5481" stroke-width="1.5"/>
+<text x="505.0" y="296" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">Claude</text>
+<text x="505.0" y="312" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">(model_arn)</text>
+<rect x="430" y="350" width="150" height="45" rx="8" fill="#e8f0fb" stroke="#2f5481" stroke-width="1.5"/>
+<text x="505.0" y="376" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">Guardrails</text>
+<rect x="650" y="45" width="140" height="45" rx="8" fill="#e8f0fb" stroke="#2f5481" stroke-width="1.5"/>
+<text x="720.0" y="72" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">S3 tài liệu</text>
+<rect x="650" y="120" width="140" height="45" rx="8" fill="#e5f1e9" stroke="#2c7650" stroke-width="1.5"/>
+<text x="720.0" y="146" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">EventBridge</text>
+<rect x="650" y="195" width="140" height="45" rx="8" fill="#e8f0fb" stroke="#2f5481" stroke-width="1.5"/>
+<text x="720.0" y="222" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">SQS</text>
+<rect x="650" y="270" width="140" height="50" rx="8" fill="#e8f0fb" stroke="#2f5481" stroke-width="1.5"/>
+<text x="720.0" y="299" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">Lambda x3</text>
+<rect x="650" y="350" width="140" height="45" rx="8" fill="#e8f0fb" stroke="#2f5481" stroke-width="1.5"/>
+<text x="720.0" y="376" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">DynamoDB</text>
+<rect x="650" y="425" width="140" height="45" rx="8" fill="#fbece2" stroke="#a64b1b" stroke-width="1.5"/>
+<text x="720.0" y="452" text-anchor="middle" font-size="12" font-weight="600" fill="#1d1a17">KMS key</text>
+</svg>
+<div class="legend"><span class="pill free">Xanh lá: miễn phí</span><span class="pill use">Xanh dương: tính theo mức dùng (thường rất nhỏ khi làm lab)</span><span class="pill paid">Cam: tính theo giờ dù không dùng</span></div></div>
+<p>Tệp sơ đồ định dạng draw.io: <a href="tracuu-ai-aws.drawio"><code>tracuu-ai-aws.drawio</code></a> (cùng thư mục). Mở bằng <a href="https://app.diagrams.net">app.diagrams.net</a> → File → Open from → Device để sửa.</p>
+<div class="note">Tệp <code>infra/</code> (CDK) trong repo vẫn giữ nguyên làm bản tham chiếu: nó là đáp án chính xác cho mọi cài đặt dưới đây. Bài lab này chỉ thay việc triển khai, không xoá nó.</div>
+
+<!-- ============================================================ 2 -->
+<h2 id="chi-phi">2. Gán nhãn chi phí</h2>
+<p>Ba nhãn: <span class="pill free">Miễn phí</span> không bao giờ tính tiền; <span class="pill use">Theo mức dùng</span> chỉ tính khi dùng, thường có hạn mức miễn phí, làm lab gần như không đáng kể; <span class="pill paid">Theo giờ</span> tính tiền mỗi giờ tồn tại dù bạn không dùng, nên <b>phải xoá sau khi làm xong</b>. Tôi không ghi số tiền cụ thể vì bảng giá thay đổi, hãy xem trang <a href="https://aws.amazon.com/pricing/">aws.amazon.com/pricing</a> của từng dịch vụ.</p>
+<div class="scroll"><table>
+<thead><tr><th>Tài nguyên</th><th>Dùng để làm gì</th><th>Chi phí</th><th>Chi tiết</th></tr></thead>
+<tbody>
+<tr><td>IAM role, policy</td><td>Cấp quyền cho dịch vụ</td><td><span class="pill free">Miễn phí</span></td><td>IAM không tính phí.</td></tr>
+<tr><td>VPC mặc định, subnet, security group</td><td>Mạng cho Fargate và ALB</td><td><span class="pill free">Miễn phí</span></td><td>Dùng VPC mặc định để khỏi tạo NAT.</td></tr>
+<tr><td>ACM chứng chỉ công khai</td><td>HTTPS cho ALB</td><td><span class="pill free">Miễn phí</span></td><td>Chỉ chứng chỉ công khai gắn vào ALB.</td></tr>
+<tr><td>EventBridge rule</td><td>Chuyển sự kiện S3 sang SQS, lịch mỗi phút</td><td><span class="pill free">Miễn phí</span></td><td>Sự kiện do dịch vụ AWS phát ra trên bus mặc định không tính phí.</td></tr>
+<tr><td>Bedrock Knowledge Base (bản thân nó)</td><td>Điều phối tìm kiếm và sinh câu trả lời</td><td><span class="pill free">Miễn phí</span></td><td>Bạn trả cho model embedding, model sinh văn bản và kho vector, không trả cho KB.</td></tr>
+<tr><td>S3 bucket tài liệu</td><td>Lưu tệp gốc</td><td><span class="pill use">Theo mức dùng</span></td><td>Theo dung lượng và số request.</td></tr>
+<tr><td>S3 Vectors (bucket + index)</td><td>Kho vector</td><td><span class="pill use">Theo mức dùng</span></td><td>Theo dung lượng vector và số lượt ghi/truy vấn. Không có mức nền.</td></tr>
+<tr><td>DynamoDB (on-demand)</td><td>Metadata tài liệu, lịch sử, chat</td><td><span class="pill use">Theo mức dùng</span></td><td>Theo lượt đọc/ghi. Bật point-in-time recovery sẽ tính thêm: bài lab tắt nó.</td></tr>
+<tr><td>SQS (3 hàng đợi)</td><td>Gom lô sự kiện, giao việc tóm tắt</td><td><span class="pill use">Theo mức dùng</span></td><td>Có hạn mức miễn phí hằng tháng.</td></tr>
+<tr><td>Lambda (3 hàm)</td><td>Bắt đầu và theo dõi lập chỉ mục, tóm tắt</td><td><span class="pill use">Theo mức dùng</span></td><td>Có hạn mức miễn phí hằng tháng. Hàm chạy mỗi phút vẫn nằm trong hạn mức với lab nhỏ.</td></tr>
+<tr><td>CloudWatch Logs</td><td>Log của Lambda và container</td><td><span class="pill use">Theo mức dùng</span></td><td>Có hạn mức nạp log miễn phí, vượt thì tính.</td></tr>
+<tr><td>Cognito user pool (gói Essentials/Lite)</td><td>Đăng nhập, MFA</td><td><span class="pill use">Theo mức dùng</span></td><td>Có hạn mức miễn phí theo số người dùng hoạt động mỗi tháng. <b>Gói Plus không có hạn mức miễn phí</b>, xem mục 3.</td></tr>
+<tr><td>Cohere Embed Multilingual v3</td><td>Biến văn bản thành vector</td><td><span class="pill use">Theo mức dùng</span></td><td>Theo số token. Mỗi lần lập chỉ mục và mỗi câu hỏi đều gọi.</td></tr>
+<tr><td>Model Claude (sinh câu trả lời)</td><td>Viết câu trả lời, tóm tắt</td><td><span class="pill use">Theo mức dùng</span></td><td>Theo số token vào/ra. Khoản này có thể lớn nhất nếu bạn hỏi nhiều.</td></tr>
+<tr><td>Bedrock Guardrails</td><td>Lọc nội dung, che thông tin cá nhân</td><td><span class="pill use">Theo mức dùng</span></td><td>Theo lượng văn bản được kiểm tra.</td></tr>
+<tr><td>ECR (kho image)</td><td>Chứa image của ứng dụng</td><td><span class="pill use">Theo mức dùng</span></td><td>Theo dung lượng lưu, rất nhỏ.</td></tr>
+<tr><td>KMS key do bạn quản lý</td><td>Mã hoá S3</td><td><span class="pill paid">Theo giờ</span></td><td>Mỗi khoá tính theo tháng (tính tỉ lệ theo thời gian tồn tại), thêm phí theo request vượt hạn mức. Khoá chờ xoá không bị tính.</td></tr>
+<tr><td>Application Load Balancer</td><td>Cổng vào HTTPS, xác thực Cognito</td><td><span class="pill paid">Theo giờ</span></td><td>Theo giờ tồn tại và theo lưu lượng. Chỉ có ở giai đoạn C.</td></tr>
+<tr><td>ECS Fargate (2 task)</td><td>Chạy ứng dụng Flask</td><td><span class="pill paid">Theo giờ</span></td><td>Theo vCPU-giờ và GB-giờ cho mỗi task đang chạy. Lab dùng 1 task để giảm phí.</td></tr>
+<tr><td>Địa chỉ IPv4 công khai (task, ALB)</td><td>Cho task ra Internet, ALB nhận truy cập</td><td><span class="pill paid">Theo giờ</span></td><td>Mỗi địa chỉ công khai tính theo giờ, kể cả khi không có lưu lượng.</td></tr>
+<tr><td>AWS WAF (tuỳ chọn)</td><td>Chặn bot, giới hạn tốc độ</td><td><span class="pill paid">Theo giờ</span></td><td>Tính theo tháng cho mỗi web ACL và mỗi rule, cộng theo request.</td></tr>
+<tr><td>Route 53 hosted zone, tên miền</td><td>DNS cho ứng dụng</td><td><span class="pill paid">Theo giờ</span></td><td>Hosted zone tính theo tháng; đăng ký tên miền mới tính phí theo năm. Nếu bạn đã có tên miền ở nơi khác thì không cần Route 53.</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ 3 -->
+<h2 id="canh-bao">3. Cảnh báo nâng gói trả phí</h2>
+<div class="alert">
+<b class="t">Cognito: bật "Threat protection" sẽ chuyển user pool sang gói Plus (trả phí, không có hạn mức miễn phí)</b>
+Khi tạo hoặc chỉnh user pool, console có thể gợi ý bật bảo vệ chống đăng nhập đáng ngờ. Tính năng này thuộc gói <b>Plus</b>. Bài lab dùng <b>Essentials</b> (mặc định cho user pool mới) và <b>không bật</b> threat protection. Nếu console hỏi "Upgrade to Plus", chọn huỷ.
+</div>
+<div class="note"><b>Các resource còn lại không tự nâng cấp tài khoản.</b> Không bước nào trong bài lab tự chuyển tài khoản AWS của bạn từ Free plan sang Paid plan. Hai điều cần biết:
+<ul>
+<li>Tài khoản <b>Free plan</b> hết hạn sau 6 tháng kể từ ngày mở hoặc khi hết credit (tuỳ điều kiện nào đến trước). Khi đó bạn tự nâng lên Paid plan ở Billing → Upgrade; AWS thông báo trước và cho 90 ngày để quyết định.</li>
+<li>Nếu bạn đăng ký tài khoản vào <b>AWS Organizations</b>, tài khoản Free plan sẽ tự được nâng lên Paid plan. Bài lab không dùng Organizations.</li>
+</ul>
+Danh sách dịch vụ mà Free plan hỗ trợ có thể thay đổi: xem <a href="https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier-plans.html">Choosing a plan</a>. Nếu console yêu cầu bạn nâng cấp trước khi tạo một tài nguyên nào đó, đó là quyết định của bạn, hãy dừng và cân nhắc.</div>
+<div class="alert"><b class="t">Khoản phí dễ quên: tính theo giờ dù bạn không dùng</b>
+KMS key, ALB, Fargate, địa chỉ IPv4 công khai, WAF, Route 53 hosted zone. Làm xong hãy chạy phần dọn dẹp ở mục 8, và đặt cảnh báo ngân sách ở bước 0.1.</div>
+
+<!-- ============================================================ 4 -->
+<h2 id="chuan-bi">4. Chuẩn bị</h2>
+
+<div class="step"><h3><span class="id">0.1</span>Đặt cảnh báo ngân sách <span class="pill free">Miễn phí</span></h3>
+<div class="why">Lab này tạo tài nguyên tính phí theo giờ. Một cảnh báo ngân sách là lưới an toàn rẻ nhất.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li>Tìm <b>Billing and Cost Management</b> → <b>Budgets</b> → <b>Create budget</b>.</li>
+<li>Chọn <b>Use a template (simplified)</b> → <b>Monthly cost budget</b>. Nhập số tiền tối đa bạn chấp nhận (ví dụ 10 USD) và email nhận cảnh báo.</li>
+</ol><p><i>Ý nghĩa:</i> Budgets gửi email khi chi phí thực tế hoặc dự báo vượt ngưỡng. Nó không chặn chi tiêu, chỉ báo cho bạn.</p></div></details>
+</div>
+
+<div class="step"><h3><span class="id">0.2</span>Mở CloudShell và đặt biến môi trường <span class="pill free">Miễn phí</span></h3>
+<div class="why">CloudShell là terminal chạy trong trình duyệt, đã đăng nhập sẵn bằng tài khoản console của bạn và dùng cú pháp bash. Nó tránh được lỗi <code>AWS_PROFILE</code> và lỗi dấu nháy JSON trên Windows.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li>Chọn region <b>Asia Pacific (Singapore) ap-southeast-1</b> ở góc phải trên cùng.</li>
+<li>Bấm biểu tượng <b>&gt;_</b> (CloudShell) trên thanh trên cùng, đợi terminal khởi động.</li>
+</ol><p><i>Ý nghĩa:</i> mọi tài nguyên bài lab nằm trong một region. Chọn sai region là nguyên nhân lỗi "không tìm thấy" phổ biến nhất.</p></div></details>
+<details class="how"><summary>AWS CLI (dán vào CloudShell)</summary><div><pre><code>export AWS_REGION=ap-southeast-1
+export AWS_DEFAULT_REGION=$AWS_REGION
+export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+# hàm lưu biến vào file để nạp lại khi CloudShell hết phiên: source ~/lab-env.sh
+save() { echo "export $1=\"$2\"" &gt;&gt; ~/lab-env.sh; export $1="$2"; }
+save AWS_REGION $AWS_REGION; save ACCOUNT_ID $ACCOUNT_ID
+save DOCS_BUCKET tracuu-lab-docs-$ACCOUNT_ID
+save VEC_BUCKET tracuu-lab-vectors-$ACCOUNT_ID
+save TABLE tracuu-lab-app
+save EMB_ID cohere.embed-multilingual-v3
+save EMB_ARN arn:aws:bedrock:$AWS_REGION::foundation-model/$EMB_ID</code></pre>
+<p><i>Ý nghĩa:</i> <code>sts get-caller-identity</code> cho biết ID tài khoản (dùng trong tên bucket để không trùng với người khác, vì tên S3 là duy nhất toàn cầu).</p></div></details>
+</div>
+
+<div class="step"><h3><span class="id">0.3</span>Quy ước tag <code>project=aws-lab</code> <span class="pill free">Miễn phí</span></h3>
+<div class="why">Mọi tài nguyên bài lab đều gắn tag <code>project = aws-lab</code>. Cuối bài bạn tìm theo tag này để chắc chắn không sót cái nào còn tính tiền.</div>
+<details class="how" open><summary>AWS Console</summary><div><p>Ở mỗi màn hình tạo tài nguyên, tìm mục <b>Tags</b> (thường nằm cuối form), thêm <b>Key = project</b>, <b>Value = aws-lab</b>. Mỗi bước dưới đây nhắc lại.</p></div></details>
+<details class="how"><summary>AWS CLI: xem mọi thứ đã gắn tag</summary><div><pre><code>aws resourcegroupstaggingapi get-resources --tag-filters Key=project,Values=aws-lab \
+  --query 'ResourceTagMappingList[].ResourceARN' --output text | tr '\t' '\n'</code></pre>
+<p><i>Ý nghĩa:</i> một lệnh liệt kê mọi tài nguyên có tag. Một số loại (như IAM role, S3 Vectors) có thể không hiện ở đây, mục 8 có bảng đầy đủ.</p></div></details>
+</div>
+
+<div class="step"><h3><span class="id">0.4</span>Kiểm tra model Bedrock có trong region <span class="pill free">Miễn phí</span></h3>
+<div class="why">Ứng dụng dùng hai model: <b>embedding</b> (Cohere, biến văn bản thành vector để tìm kiếm) và <b>sinh văn bản</b> (Claude, viết câu trả lời). Phải kiểm tra trước khi tạo gì khác vì thiếu model thì không đi tiếp được.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li>Vào <b>Amazon Bedrock</b> → <b>Model catalog</b>, lọc theo provider <b>Cohere</b> và <b>Anthropic</b>.</li>
+<li>Xác nhận <b>Embed Multilingual v3</b> có trong region. Với Claude, mở model và xem phần <b>inference profile</b> hoặc quyền truy cập; nếu model yêu cầu bật quyền, làm theo hướng dẫn trên trang đó.</li>
+<li>Ghi lại <b>ARN</b> của model hoặc inference profile Claude: đó là <code>MODEL_ARN</code>.</li>
+</ol></div></details>
+<details class="how"><summary>AWS CLI</summary><div><pre><code>aws bedrock list-foundation-models --query "modelSummaries[?contains(modelId,'embed')].modelId"
+aws bedrock list-foundation-models --by-provider anthropic --query "modelSummaries[].modelId"
+aws bedrock list-inference-profiles --query "inferenceProfileSummaries[].inferenceProfileArn"
+
+# chọn một ARN Claude từ kết quả trên:
+save MODEL_ARN arn:aws:bedrock:ap-southeast-1:ACCOUNT:inference-profile/TEN-PROFILE</code></pre>
+<p><i>Ý nghĩa:</i> inference profile cho phép gọi model qua nhiều region; nhiều model Claude chỉ gọi được qua profile.</p></div></details>
+<p class="note">Nếu không thấy <code>cohere.embed-multilingual-v3</code> trong region, chuyển cả bài lab sang region khác có model đó và có S3 Vectors (ví dụ Sydney <code>ap-southeast-2</code> có Titan V2).</p>
+</div>
+
+<!-- ============================================================ A -->
+<h2 id="giai-doan-a">5. Giai đoạn A: dữ liệu và RAG (không cần tên miền)</h2>
+
+<div class="step"><h3><span class="id">A1</span>KMS key <span class="pill paid">Theo giờ</span></h3>
+<div class="why">Khoá mã hoá do bạn quản lý, dùng cho bucket tài liệu. Ưu điểm so với khoá mặc định: bạn kiểm soát ai được giải mã và có nhật ký sử dụng. Đổi lại phải trả phí khoá và cấp quyền KMS cho từng role cần đọc/ghi.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>Key Management Service</b> → <b>Customer managed keys</b> → <b>Create key</b>.</li>
+<li>Key type <b>Symmetric</b>, usage <b>Encrypt and decrypt</b>.</li>
+<li>Alias: <code>tracuu-lab</code>. Tags: <code>project = aws-lab</code>.</li>
+<li>Key administrators: chọn người dùng của bạn. Key users: để trống ở bước này, các role sẽ được cấp quyền qua IAM policy ở bước sau.</li>
+<li><b>Finish</b>, rồi mở khoá và bật <b>Automatic key rotation</b> (tab Key rotation).</li>
+</ol><p><i>Ý nghĩa:</i> Symmetric là loại một khoá cho cả mã hoá và giải mã (S3 yêu cầu loại này). Xoay khoá tự động mỗi năm là thực hành bảo mật chuẩn.</p></div></details>
+<details class="how"><summary>AWS CLI</summary><div><pre><code>save KEY_ID $(aws kms create-key --description "tracuu-lab" \
+  --tags TagKey=project,TagValue=aws-lab --query KeyMetadata.KeyId --output text)
+aws kms create-alias --alias-name alias/tracuu-lab --target-key-id $KEY_ID
+aws kms enable-key-rotation --key-id $KEY_ID
+save KEY_ARN $(aws kms describe-key --key-id $KEY_ID --query KeyMetadata.Arn --output text)</code></pre></div></details>
+</div>
+
+<div class="step"><h3><span class="id">A2</span>S3 bucket tài liệu <span class="pill use">Theo mức dùng</span></h3>
+<div class="why">Nơi lưu tệp gốc. Trình duyệt sẽ tải lên thẳng đây qua presigned URL, nên bucket cần CORS. Bật EventBridge để mỗi tệp mới phát ra một sự kiện cho pipeline.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>S3</b> → <b>Create bucket</b>. Tên: <code>tracuu-lab-docs-&lt;ID tài khoản&gt;</code>, region Singapore.</li>
+<li><b>Block all public access</b>: giữ bật tất cả. <b>Bucket Versioning</b>: Enable.</li>
+<li><b>Default encryption</b>: SSE-KMS → chọn khoá <code>tracuu-lab</code>; bật <b>Bucket Key</b>. Tag: <code>project=aws-lab</code>. Tạo bucket.</li>
+<li>Vào bucket → tab <b>Properties</b> → <b>Amazon EventBridge</b> → Edit → <b>On</b>.</li>
+<li>Tab <b>Permissions</b> → <b>Cross-origin resource sharing (CORS)</b> → Edit: dán JSON ở khung CLI bên dưới (đổi origin thành tên miền thật của bạn ở giai đoạn C; có thể để tạm và sửa sau).</li>
+</ol>
+<p><i>Ý nghĩa:</i> <b>Block public access</b> chặn mọi cách vô tình công khai dữ liệu. <b>Versioning</b> cho phép khôi phục tệp bị ghi đè hoặc xoá nhầm. <b>Bucket Key</b> giảm số lần gọi KMS, tiết kiệm tiền. <b>CORS</b> cho phép trình duyệt chạy trang của bạn gửi <code>PUT</code> sang domain S3; thiếu CORS, upload trong ứng dụng sẽ lỗi dù URL đúng.</p></div></details>
+<details class="how"><summary>AWS CLI</summary><div><pre><code>aws s3api create-bucket --bucket $DOCS_BUCKET --region $AWS_REGION \
+  --create-bucket-configuration LocationConstraint=$AWS_REGION
+aws s3api put-public-access-block --bucket $DOCS_BUCKET --public-access-block-configuration \
+  BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+aws s3api put-bucket-versioning --bucket $DOCS_BUCKET --versioning-configuration Status=Enabled
+aws s3api put-bucket-encryption --bucket $DOCS_BUCKET --server-side-encryption-configuration \
+  "{\"Rules\":[{\"ApplyServerSideEncryptionByDefault\":{\"SSEAlgorithm\":\"aws:kms\",\"KMSMasterKeyID\":\"$KEY_ARN\"},\"BucketKeyEnabled\":true}]}"
+aws s3api put-bucket-tagging --bucket $DOCS_BUCKET --tagging 'TagSet=[{Key=project,Value=aws-lab}]'
+aws s3api put-bucket-notification-configuration --bucket $DOCS_BUCKET \
+  --notification-configuration '{"EventBridgeConfiguration":{}}'
+
+cat &gt; cors.json &lt;&lt;'EOF'
+{"CORSRules":[{"AllowedOrigins":["https://TEN-MIEN-CUA-BAN"],"AllowedMethods":["PUT","GET"],"AllowedHeaders":["*"],"ExposeHeaders":["ETag"],"MaxAgeSeconds":3000}]}
+EOF
+aws s3api put-bucket-cors --bucket $DOCS_BUCKET --cors-configuration file://cors.json</code></pre></div></details>
+</div>
+
+<div class="step"><h3><span class="id">A3</span>Bảng DynamoDB <span class="pill use">Theo mức dùng</span></h3>
+<div class="why">Một bảng duy nhất chứa tài liệu, phiên chat, lịch sử, thống kê. Khoá <code>PK</code>/<code>SK</code> chung cho mọi loại dữ liệu; hai chỉ mục phụ GSI1 (tìm tài liệu theo nhóm) và GSI2 (job theo trạng thái, danh sách nhóm) phục vụ các truy vấn của giao diện. Thiết kế này gọi là <i>single-table</i>.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>DynamoDB</b> → <b>Create table</b>. Tên <code>tracuu-lab-app</code>. Partition key <code>PK</code> (String), Sort key <code>SK</code> (String).</li>
+<li><b>Table settings</b> → <b>Customize settings</b> → Capacity mode <b>On-demand</b>. Encryption: giữ khoá do AWS sở hữu (miễn phí).</li>
+<li>Mục <b>Global secondary indexes</b> → Create: <code>GSI1</code> với <code>GSI1PK</code>/<code>GSI1SK</code> (String), Projection <b>All</b>; làm lại cho <code>GSI2</code> với <code>GSI2PK</code>/<code>GSI2SK</code>.</li>
+<li>Tag <code>project=aws-lab</code>, tạo bảng. Sau đó vào tab <b>Additional settings</b> → <b>Time to Live</b> → bật với thuộc tính <code>ttl</code>.</li>
+</ol>
+<p><i>Ý nghĩa:</i> <b>On-demand</b> trả theo lượt đọc/ghi, không phải đoán dung lượng. <b>Projection All</b> sao chép toàn bộ thuộc tính sang chỉ mục để đọc không cần quay lại bảng chính. <b>TTL</b> tự xoá mục hết hạn: lịch sử tìm kiếm 90 ngày dựa vào đây. Bài lab tắt point-in-time recovery cho đỡ tốn; production nên bật.</p></div></details>
+<details class="how"><summary>AWS CLI</summary><div><pre><code>aws dynamodb create-table --table-name $TABLE --billing-mode PAY_PER_REQUEST \
+  --attribute-definitions AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S \
+    AttributeName=GSI1PK,AttributeType=S AttributeName=GSI1SK,AttributeType=S \
+    AttributeName=GSI2PK,AttributeType=S AttributeName=GSI2SK,AttributeType=S \
+  --key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE \
+  --global-secondary-indexes \
+    'IndexName=GSI1,KeySchema=[{AttributeName=GSI1PK,KeyType=HASH},{AttributeName=GSI1SK,KeyType=RANGE}],Projection={ProjectionType=ALL}' \
+    'IndexName=GSI2,KeySchema=[{AttributeName=GSI2PK,KeyType=HASH},{AttributeName=GSI2SK,KeyType=RANGE}],Projection={ProjectionType=ALL}' \
+  --tags Key=project,Value=aws-lab
+aws dynamodb wait table-exists --table-name $TABLE
+aws dynamodb update-time-to-live --table-name $TABLE --time-to-live-specification Enabled=true,AttributeName=ttl</code></pre></div></details>
+</div>
+
+<div class="step"><h3><span class="id">A4</span>S3 Vectors: bucket và index <span class="pill use">Theo mức dùng</span></h3>
+<div class="why">Kho lưu vector cho Knowledge Base. Không có mức phí nền, khác với OpenSearch Serverless. Số chiều (dimension) và độ đo phải khớp model embedding: Cohere Embed Multilingual v3 cho vector <b>1024 chiều</b>, dùng <b>cosine</b>. Sai số chiều thì mọi lần lập chỉ mục sẽ lỗi, và <b>không sửa được sau khi tạo</b>.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>Amazon S3</b> → menu trái <b>Vector buckets</b> → <b>Create vector bucket</b>. Tên <code>tracuu-lab-vectors-&lt;ID tài khoản&gt;</code>, mã hoá mặc định (SSE-S3). Tạo.</li>
+<li>Mở vector bucket → <b>Create vector index</b>: tên <code>tracuu-index</code>, <b>Dimensions = 1024</b>, <b>Distance metric = Cosine</b>.</li>
+<li>Trong <b>Metadata configuration</b>, thêm hai khoá <b>non-filterable</b>: <code>AMAZON_BEDROCK_TEXT</code> và <code>AMAZON_BEDROCK_METADATA</code>.</li>
+</ol>
+<p><i>Ý nghĩa:</i> Knowledge Base lưu nội dung từng đoạn và metadata hệ thống vào vector dưới hai khoá đó. Chúng dài và không cần dùng để lọc, nên khai báo là non-filterable để không vượt giới hạn dung lượng metadata dùng để lọc.</p></div></details>
+<details class="how"><summary>AWS CLI</summary><div><pre><code>aws s3vectors create-vector-bucket --vector-bucket-name $VEC_BUCKET
+aws s3vectors create-index --vector-bucket-name $VEC_BUCKET --index-name tracuu-index \
+  --data-type float32 --dimension 1024 --distance-metric cosine \
+  --metadata-configuration '{"nonFilterableMetadataKeys":["AMAZON_BEDROCK_TEXT","AMAZON_BEDROCK_METADATA"]}'
+save INDEX_ARN $(aws s3vectors get-index --vector-bucket-name $VEC_BUCKET --index-name tracuu-index \
+  --query index.indexArn --output text)</code></pre>
+<p class="note">Gắn tag <code>project=aws-lab</code> cho vector bucket trong console (tab Tags) nếu có; lệnh tag cho S3 Vectors thay đổi theo phiên bản CLI.</p></div></details>
+</div>
+
+<div class="step"><h3><span class="id">A5</span>Bedrock Knowledge Base và data source <span class="pill free">Miễn phí</span> <span class="pill use">Model: theo mức dùng</span></h3>
+<div class="why">Knowledge Base nối ba thứ: nguồn tài liệu (S3), model embedding và kho vector. Mỗi lần đồng bộ (<i>ingestion job</i>) nó đọc tệp, chia đoạn, tạo vector và ghi vào kho. Khi hỏi, nó tìm đoạn gần nghĩa nhất rồi đưa cho Claude viết câu trả lời.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>Amazon Bedrock</b> → <b>Knowledge Bases</b> → <b>Create</b> → <b>Knowledge Base with vector store</b>.</li>
+<li>Tên <code>tracuu-lab-kb</code>. IAM permissions: <b>Create and use a new service role</b> (console tự tạo role; bài học: xem policy của nó sau khi tạo). Tag <code>project=aws-lab</code>.</li>
+<li>Data source: <b>Amazon S3</b>. Tên <code>docs</code>. S3 URI: <code>s3://tracuu-lab-docs-&lt;ID&gt;/docs/</code> (chỉ thư mục <code>docs/</code>).</li>
+<li><b>Chunking strategy</b>: <b>Semantic chunking</b>; max tokens <b>400</b>, buffer size <b>0</b>, breakpoint percentile <b>95</b>.</li>
+<li>Embeddings model: <b>Cohere Embed Multilingual v3</b>. Vector store: chọn <b>Amazon S3 Vectors</b> → <b>Choose an existing vector index</b> → chọn bucket và index vừa tạo.</li>
+<li>Create. Sau đó mở service role console đã tạo và <b>thêm quyền KMS</b> (Decrypt, GenerateDataKey trên khoá <code>tracuu-lab</code>), vì bucket dùng SSE-KMS và role tự sinh không biết điều đó.</li>
+<li>Ghi lại <b>Knowledge base ID</b> và <b>Data source ID</b>.</li>
+</ol>
+<p><i>Ý nghĩa:</i> <b>Semantic chunking</b> cắt đoạn theo ý nghĩa thay vì theo độ dài cố định. Max tokens 400 chừa khoảng trống dưới giới hạn khoảng 512 token đầu vào của Cohere v3. <b>Inclusion prefix <code>docs/</code></b> giúp KB bỏ qua mọi thứ ngoài thư mục tài liệu. Role của KB chỉ nên có quyền tối thiểu: gọi đúng model embedding, đọc đúng bucket, ghi đúng index.</p></div></details>
+<details class="how"><summary>AWS CLI</summary><div>
+<h4>1. Tạo role cho KB</h4>
+<pre><code>cat &gt; kb-trust.json &lt;&lt;EOF
+{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"bedrock.amazonaws.com"},"Action":"sts:AssumeRole",
+"Condition":{"StringEquals":{"aws:SourceAccount":"$ACCOUNT_ID"},"ArnLike":{"aws:SourceArn":"arn:aws:bedrock:$AWS_REGION:$ACCOUNT_ID:knowledge-base/*"}}}]}
+EOF
+cat &gt; kb-policy.json &lt;&lt;EOF
+{"Version":"2012-10-17","Statement":[
+{"Effect":"Allow","Action":"bedrock:InvokeModel","Resource":"$EMB_ARN"},
+{"Effect":"Allow","Action":["s3vectors:GetIndex","s3vectors:QueryVectors","s3vectors:PutVectors","s3vectors:GetVectors","s3vectors:DeleteVectors"],"Resource":"$INDEX_ARN"},
+{"Effect":"Allow","Action":["s3:GetObject","s3:ListBucket"],"Resource":["arn:aws:s3:::$DOCS_BUCKET","arn:aws:s3:::$DOCS_BUCKET/*"]},
+{"Effect":"Allow","Action":["kms:Decrypt","kms:GenerateDataKey"],"Resource":"$KEY_ARN"}]}
+EOF
+aws iam create-role --role-name tracuu-lab-kb --assume-role-policy-document file://kb-trust.json --tags Key=project,Value=aws-lab
+aws iam put-role-policy --role-name tracuu-lab-kb --policy-name kb --policy-document file://kb-policy.json
+save KB_ROLE_ARN arn:aws:iam::$ACCOUNT_ID:role/tracuu-lab-kb
+sleep 15   # đợi role lan truyền</code></pre>
+<h4>2. Tạo Knowledge Base và data source</h4>
+<pre><code>save KB_ID $(aws bedrock-agent create-knowledge-base --name tracuu-lab-kb --role-arn $KB_ROLE_ARN \
+  --knowledge-base-configuration "{\"type\":\"VECTOR\",\"vectorKnowledgeBaseConfiguration\":{\"embeddingModelArn\":\"$EMB_ARN\"}}" \
+  --storage-configuration "{\"type\":\"S3_VECTORS\",\"s3VectorsConfiguration\":{\"indexArn\":\"$INDEX_ARN\"}}" \
+  --tags project=aws-lab --query knowledgeBase.knowledgeBaseId --output text)
+save KB_ARN arn:aws:bedrock:$AWS_REGION:$ACCOUNT_ID:knowledge-base/$KB_ID
+
+save DS_ID $(aws bedrock-agent create-data-source --knowledge-base-id $KB_ID --name docs \
+  --data-source-configuration "{\"type\":\"S3\",\"s3Configuration\":{\"bucketArn\":\"arn:aws:s3:::$DOCS_BUCKET\",\"inclusionPrefixes\":[\"docs/\"]}}" \
+  --vector-ingestion-configuration '{"chunkingConfiguration":{"chunkingStrategy":"SEMANTIC","semanticChunkingConfiguration":{"maxTokens":400,"bufferSize":0,"breakpointPercentileThreshold":95}}}' \
+  --server-side-encryption-configuration "{\"kmsKeyArn\":\"$KEY_ARN\"}" \
+  --query dataSource.dataSourceId --output text)</code></pre></div></details>
+</div>
+
+<div class="step"><h3><span class="id">A6</span>Guardrail (tuỳ chọn) <span class="pill use">Theo mức dùng</span></h3>
+<div class="why">Lớp lọc đặt giữa người dùng và model: chặn nội dung độc hại, chặn prompt injection (cố lừa model bỏ qua chỉ dẫn), che số thẻ, mật khẩu và số căn cước 12 chữ số. Có thể bỏ qua nếu bạn muốn rút gọn bài lab.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>Bedrock</b> → <b>Guardrails</b> → <b>Create guardrail</b>. Tên <code>tracuu-lab-guardrail</code>.</li>
+<li><b>Content filters</b>: bật Hate, Insults, Sexual, Violence, Misconduct ở mức High cho cả input và output; <b>Prompt attacks</b> mức High cho input.</li>
+<li><b>Sensitive information filters</b>: thêm PII <i>Credit/debit card number</i> và <i>Password</i> với hành động <b>Mask</b>; thêm <b>Regex pattern</b> tên <code>cccd</code>, mẫu <code>\b\d{12}\b</code>, hành động Mask.</li>
+<li>Đặt thông báo bị chặn, tạo guardrail rồi bấm <b>Create version</b>. Ghi lại <b>Guardrail ID</b> và số version.</li>
+</ol><p><i>Ý nghĩa:</i> Mask thay thông tin nhạy cảm bằng ký hiệu thay vì chặn cả câu. Phải tạo <b>version</b> (bản đóng băng) để ứng dụng tham chiếu ổn định, bản DRAFT thay đổi liên tục.</p></div></details>
+<details class="how"><summary>AWS CLI</summary><div><pre><code>cat &gt; guardrail.json &lt;&lt;'EOF'
+{"name":"tracuu-lab-guardrail","blockedInputMessaging":"Xin lỗi, tôi không thể hỗ trợ nội dung này.",
+"blockedOutputsMessaging":"Xin lỗi, tôi không thể hiển thị câu trả lời này.",
+"contentPolicyConfig":{"filtersConfig":[
+{"type":"HATE","inputStrength":"HIGH","outputStrength":"HIGH"},{"type":"INSULTS","inputStrength":"HIGH","outputStrength":"HIGH"},
+{"type":"SEXUAL","inputStrength":"HIGH","outputStrength":"HIGH"},{"type":"VIOLENCE","inputStrength":"HIGH","outputStrength":"HIGH"},
+{"type":"MISCONDUCT","inputStrength":"HIGH","outputStrength":"HIGH"},{"type":"PROMPT_ATTACK","inputStrength":"HIGH","outputStrength":"NONE"}]},
+"sensitiveInformationPolicyConfig":{"piiEntitiesConfig":[{"type":"CREDIT_DEBIT_CARD_NUMBER","action":"ANONYMIZE"},{"type":"PASSWORD","action":"ANONYMIZE"}],
+"regexesConfig":[{"name":"cccd","description":"Số căn cước công dân 12 chữ số","pattern":"\\b\\d{12}\\b","action":"ANONYMIZE"}]},
+"tags":[{"key":"project","value":"aws-lab"}]}
+EOF
+save GUARDRAIL_ID $(aws bedrock create-guardrail --cli-input-json file://guardrail.json --query guardrailId --output text)
+save GUARDRAIL_VERSION $(aws bedrock create-guardrail-version --guardrail-identifier $GUARDRAIL_ID --query version --output text)
+save GUARDRAIL_ARN arn:aws:bedrock:$AWS_REGION:$ACCOUNT_ID:guardrail/$GUARDRAIL_ID</code></pre></div></details>
+</div>
+
+<div class="step"><h3><span class="id">A7</span>Kiểm thử: lập chỉ mục, tìm kiếm và chứng minh phân quyền</h3>
+<div class="why">Đây là bước quan trọng nhất của giai đoạn A. Mỗi tài liệu có một tệp <code>.metadata.json</code> chứa <i>cờ nhóm</i> <code>g_&lt;băm tên nhóm&gt;: true</code>. Khi tìm, ứng dụng chỉ cho Bedrock xét các đoạn có cờ khớp nhóm của người dùng. Bạn sẽ thấy tài liệu hiện ra với nhóm đúng và biến mất với nhóm sai.</div>
+<details class="how" open><summary>Làm bằng CLI (CloudShell) rồi xem kết quả trên console</summary><div><pre><code># 1. Tính cờ của nhóm "Toàn công ty" (cùng cách ứng dụng tính: SHA-1 của tên nhóm, lấy 12 ký tự đầu)
+save G $(python3 -c "import hashlib;print('g_'+hashlib.sha1('Toàn công ty'.encode('utf-8')).hexdigest()[:12])")
+
+# 2. Tạo một tài liệu thử và tệp metadata đi kèm
+echo "Quy chế thử nghiệm: công tác phí trong nước là 350.000 đồng mỗi ngày cho nhân viên." &gt; quy-che.txt
+cat &gt; quy-che.txt.metadata.json &lt;&lt;EOF
+{"metadataAttributes":{"doc_id":"demo1","$G":true}}
+EOF
+aws s3 cp quy-che.txt s3://$DOCS_BUCKET/docs/demo1/quy-che.txt
+aws s3 cp quy-che.txt.metadata.json s3://$DOCS_BUCKET/docs/demo1/quy-che.txt.metadata.json
+
+# 3. Đồng bộ (ingestion job) và đợi COMPLETE
+JOB=$(aws bedrock-agent start-ingestion-job --knowledge-base-id $KB_ID --data-source-id $DS_ID \
+  --query ingestionJob.ingestionJobId --output text)
+aws bedrock-agent get-ingestion-job --knowledge-base-id $KB_ID --data-source-id $DS_ID \
+  --ingestion-job-id $JOB --query ingestionJob.status      # lặp lại đến khi COMPLETE
+
+# 4. Tìm với đúng nhóm: phải thấy tài liệu
+aws bedrock-agent-runtime retrieve --knowledge-base-id $KB_ID \
+  --retrieval-query text="công tác phí" \
+  --retrieval-configuration "{\"vectorSearchConfiguration\":{\"numberOfResults\":3,\"filter\":{\"equals\":{\"key\":\"$G\",\"value\":true}}}}" \
+  --query 'retrievalResults[].content.text'
+
+# 5. Tìm với nhóm khác: phải KHÔNG thấy gì
+aws bedrock-agent-runtime retrieve --knowledge-base-id $KB_ID \
+  --retrieval-query text="công tác phí" \
+  --retrieval-configuration '{"vectorSearchConfiguration":{"numberOfResults":3,"filter":{"equals":{"key":"g_000000000000","value":true}}}}' \
+  --query 'retrievalResults[].content.text'</code></pre>
+<p>Trên console: <b>Bedrock → Knowledge Bases → tracuu-lab-kb → Test knowledge base</b>, chọn model Claude và hỏi "Công tác phí mỗi ngày là bao nhiêu?" để xem câu trả lời có trích dẫn. Hãy thêm bộ lọc metadata ở panel cấu hình để thử như bước 4 và 5.</p>
+<p class="alert"><b class="t">Nếu bước 5 trả về tài liệu, dừng lại.</b>Phân quyền theo nhóm không hoạt động ở region/dịch vụ của bạn. Không đưa dữ liệu nhạy cảm vào cho đến khi tìm ra nguyên nhân.</p></div></details>
+</div>
+
+<!-- ============================================================ B -->
+<h2 id="giai-doan-b">6. Giai đoạn B: pipeline nạp tài liệu (không cần tên miền)</h2>
+<p>Luồng: tệp mới trong S3 → EventBridge → SQS (gom lô 60 giây) → Lambda <code>ingest_trigger</code> bắt đầu ingestion job → Lambda <code>poll_jobs</code> (mỗi phút) cập nhật trạng thái → SQS tóm tắt → Lambda <code>summarize</code>.</p>
+
+<div class="step"><h3><span class="id">B1</span>Ba hàng đợi SQS <span class="pill use">Theo mức dùng</span></h3>
+<div class="why">Hàng đợi đệm giữa các thành phần để một sự cố không làm mất sự kiện. Mỗi hàng đợi chính có <b>dead-letter queue (DLQ)</b>: tin nhắn thất bại nhiều lần được chuyển vào đó để bạn kiểm tra thay vì lặp mãi. <b>Visibility timeout</b> phải lớn hơn thời gian chạy của Lambda, nếu không tin nhắn được giao lại khi hàm còn đang xử lý.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>SQS</b> → <b>Create queue</b> (loại <b>Standard</b>) lần lượt cho: <code>tracuu-lab-ingest-dlq</code>, <code>tracuu-lab-summary-dlq</code> (để mặc định, retention 14 ngày).</li>
+<li>Tạo <code>tracuu-lab-ingest</code>: Visibility timeout <b>6 phút</b>; <b>Dead-letter queue</b> bật, chọn <code>ingest-dlq</code>, Maximum receives <b>5</b>.</li>
+<li>Tạo <code>tracuu-lab-summary</code>: Visibility timeout <b>30 phút</b>; DLQ là <code>summary-dlq</code>, Maximum receives <b>3</b>.</li>
+<li>Mọi hàng đợi: tag <code>project=aws-lab</code>. Ở mục Access policy giữ mặc định (chính sách cho EventBridge thêm ở bước B3).</li>
+</ol></div></details>
+<details class="how"><summary>AWS CLI</summary><div><pre><code>for q in ingest-dlq summary-dlq; do
+  aws sqs create-queue --queue-name tracuu-lab-$q --tags project=aws-lab \
+    --attributes MessageRetentionPeriod=1209600 &gt;/dev/null
+done
+arn() { aws sqs get-queue-attributes --queue-url $(aws sqs get-queue-url --queue-name $1 --query QueueUrl --output text) \
+  --attribute-names QueueArn --query Attributes.QueueArn --output text; }
+save INGEST_DLQ_ARN $(arn tracuu-lab-ingest-dlq); save SUMMARY_DLQ_ARN $(arn tracuu-lab-summary-dlq)
+
+cat &gt; ingest-attr.json &lt;&lt;EOF
+{"VisibilityTimeout":"360","RedrivePolicy":"{\"deadLetterTargetArn\":\"$INGEST_DLQ_ARN\",\"maxReceiveCount\":\"5\"}"}
+EOF
+cat &gt; summary-attr.json &lt;&lt;EOF
+{"VisibilityTimeout":"1800","RedrivePolicy":"{\"deadLetterTargetArn\":\"$SUMMARY_DLQ_ARN\",\"maxReceiveCount\":\"3\"}"}
+EOF
+save INGEST_Q_URL $(aws sqs create-queue --queue-name tracuu-lab-ingest --attributes file://ingest-attr.json --tags project=aws-lab --query QueueUrl --output text)
+save SUMMARY_Q_URL $(aws sqs create-queue --queue-name tracuu-lab-summary --attributes file://summary-attr.json --tags project=aws-lab --query QueueUrl --output text)
+save INGEST_Q_ARN $(arn tracuu-lab-ingest); save SUMMARY_Q_ARN $(arn tracuu-lab-summary)</code></pre></div></details>
+</div>
+
+<div class="step"><h3><span class="id">B2</span>IAM role và code cho ba Lambda <span class="pill free">Miễn phí</span> <span class="pill use">Lambda: theo mức dùng</span></h3>
+<div class="why">Mỗi hàm chạy dưới một role. Nguyên tắc <i>quyền tối thiểu</i>: chỉ cấp đúng những hành động hàm cần, trên đúng tài nguyên. Code dùng chung gói <code>app/</code> (logic) và <code>lambdas/</code> (3 hàm xử lý); runtime Lambda đã có boto3 nên không cần cài thêm, và gói không chứa Flask.</div>
+<details class="how" open><summary>AWS Console (role)</summary><div><ol>
+<li><b>IAM</b> → <b>Roles</b> → <b>Create role</b> → trusted entity <b>AWS service</b> → <b>Lambda</b>. Tên <code>tracuu-lab-lambda</code>.</li>
+<li>Gắn managed policy <b>AWSLambdaSQSQueueExecutionRole</b> (ghi log + đọc SQS). Tag <code>project=aws-lab</code>.</li>
+<li>Mở role → <b>Add permissions → Create inline policy</b> → JSON: dán nội dung <code>lambda-policy.json</code> ở khung CLI bên dưới (thay biến bằng giá trị thật).</li>
+</ol><p><i>Ý nghĩa:</i> <code>bedrock:RetrieveAndGenerate</code> chỉ chấp nhận Resource <code>*</code> (đặc thù của hành động này), các hành động khác giới hạn vào đúng Knowledge Base.</p></div></details>
+<details class="how"><summary>AWS CLI (role và gói code)</summary><div><pre><code>cat &gt; lambda-trust.json &lt;&lt;'EOF'
+{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}
+EOF
+cat &gt; lambda-policy.json &lt;&lt;EOF
+{"Version":"2012-10-17","Statement":[
+{"Effect":"Allow","Action":["dynamodb:GetItem","dynamodb:PutItem","dynamodb:UpdateItem","dynamodb:Query"],
+ "Resource":["arn:aws:dynamodb:$AWS_REGION:$ACCOUNT_ID:table/$TABLE","arn:aws:dynamodb:$AWS_REGION:$ACCOUNT_ID:table/$TABLE/index/*"]},
+{"Effect":"Allow","Action":["bedrock:StartIngestionJob","bedrock:GetIngestionJob","bedrock:Retrieve"],"Resource":"$KB_ARN"},
+{"Effect":"Allow","Action":"bedrock:RetrieveAndGenerate","Resource":"*"},
+{"Effect":"Allow","Action":"bedrock:InvokeModel","Resource":["$MODEL_ARN","arn:aws:bedrock:*::foundation-model/*"]},
+{"Effect":"Allow","Action":"sqs:SendMessage","Resource":"$SUMMARY_Q_ARN"}]}
+EOF
+aws iam create-role --role-name tracuu-lab-lambda --assume-role-policy-document file://lambda-trust.json --tags Key=project,Value=aws-lab
+aws iam attach-role-policy --role-name tracuu-lab-lambda --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole
+aws iam put-role-policy --role-name tracuu-lab-lambda --policy-name app --policy-document file://lambda-policy.json
+save LAMBDA_ROLE_ARN arn:aws:iam::$ACCOUNT_ID:role/tracuu-lab-lambda
+
+# gói code: kho mã nguồn là công khai nên clone được trong CloudShell
+git clone https://github.com/algo-motion/claude-code-practice.git
+cd claude-code-practice/tracuu-ai
+python3 -m zipfile -c ~/lambda.zip app lambdas    # dùng python để zip có đường dẫn đúng chuẩn
+cd ~; ls -lh lambda.zip</code></pre></div></details>
+</div>
+
+<div class="step"><h3><span class="id">B3</span>Ba hàm Lambda <span class="pill use">Theo mức dùng</span></h3>
+<div class="why">Mỗi hàm là một <i>handler</i> trong gói code. Biến môi trường là cách truyền cấu hình (ID Knowledge Base, tên bảng...) mà không ghi cứng vào code. <b>Batching window 60 giây</b> làm Lambda nhận nhiều sự kiện cùng lúc: tải 20 tệp liên tiếp chỉ tạo một ingestion job, vì Knowledge Base chỉ chạy một job tại một thời điểm cho mỗi data source.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>Lambda</b> → <b>Create function</b> → <b>Author from scratch</b>. Tên <code>tracuu-lab-ingest</code>, runtime <b>Python 3.12</b>, <b>Use an existing role</b> = <code>tracuu-lab-lambda</code>. Tag <code>project=aws-lab</code>.</li>
+<li>Tab <b>Code</b> → <b>Upload from → .zip file</b> → chọn <code>lambda.zip</code> (tải từ CloudShell: Actions → Download file). Mục <b>Runtime settings → Edit</b>: Handler <code>lambdas.ingest_trigger.handler</code>.</li>
+<li>Tab <b>Configuration</b> → <b>General</b>: Timeout <b>1 phút</b>, Memory <b>512 MB</b>. <b>Environment variables</b>: <code>KB_ID</code>, <code>KB_DATA_SOURCE_ID</code>, <code>MODEL_ARN</code>, <code>TABLE_NAME</code>, <code>DOCS_BUCKET</code>, <code>SUMMARY_QUEUE_URL</code>, <code>SEARCH_TYPE=SEMANTIC</code>.</li>
+<li><b>Add trigger</b> → SQS → <code>tracuu-lab-ingest</code>, Batch size <b>100</b>, Batch window <b>60</b> giây, Maximum concurrency <b>2</b>.</li>
+<li>Lặp lại cho <code>tracuu-lab-poll</code> (handler <code>lambdas.poll_jobs.handler</code>, timeout 2 phút, <b>không</b> có trigger SQS: trigger là lịch ở bước B4) và <code>tracuu-lab-summarize</code> (handler <code>lambdas.summarize.handler</code>, timeout 5 phút, trigger SQS <code>tracuu-lab-summary</code> batch 5, concurrency 2).</li>
+</ol>
+<p><i>Ý nghĩa:</i> <b>Maximum concurrency 2</b> là mức tối thiểu cho phép, giữ số hàm chạy song song thấp để không tranh nhau tạo job. Timeout của hàm luôn phải nhỏ hơn visibility timeout của hàng đợi nguồn (60 giây &lt; 6 phút; 300 giây &lt; 30 phút).</p></div></details>
+<details class="how"><summary>AWS CLI</summary><div><pre><code>cat &gt; lambda-env.json &lt;&lt;EOF
+{"Variables":{"KB_ID":"$KB_ID","KB_DATA_SOURCE_ID":"$DS_ID","MODEL_ARN":"$MODEL_ARN","TABLE_NAME":"$TABLE",
+"DOCS_BUCKET":"$DOCS_BUCKET","SUMMARY_QUEUE_URL":"$SUMMARY_Q_URL","SEARCH_TYPE":"SEMANTIC"}}
+EOF
+mk() {  # tên, handler, timeout
+  aws lambda create-function --function-name tracuu-lab-$1 --runtime python3.12 --handler $2 \
+    --role $LAMBDA_ROLE_ARN --zip-file fileb://$HOME/lambda.zip --timeout $3 --memory-size 512 \
+    --environment file://lambda-env.json --tags project=aws-lab --query FunctionArn --output text
+}
+save INGEST_FN_ARN $(mk ingest lambdas.ingest_trigger.handler 60)
+save POLL_FN_ARN $(mk poll lambdas.poll_jobs.handler 120)
+save SUMMARIZE_FN_ARN $(mk summarize lambdas.summarize.handler 300)
+
+aws lambda create-event-source-mapping --function-name tracuu-lab-ingest --event-source-arn $INGEST_Q_ARN \
+  --batch-size 100 --maximum-batching-window-in-seconds 60 --scaling-config MaximumConcurrency=2
+aws lambda create-event-source-mapping --function-name tracuu-lab-summarize --event-source-arn $SUMMARY_Q_ARN \
+  --batch-size 5 --scaling-config MaximumConcurrency=2</code></pre></div></details>
+</div>
+
+<div class="step"><h3><span class="id">B4</span>Quy tắc EventBridge <span class="pill free">Miễn phí</span></h3>
+<div class="why">Hai quy tắc: (1) khi có tệp mới dưới <code>docs/</code> trong bucket, gửi sự kiện vào hàng đợi ingest; (2) mỗi phút, gọi hàm <code>poll</code> để cập nhật trạng thái job. Hàng đợi phải có <b>resource policy</b> cho phép EventBridge gửi vào, nếu không sự kiện bị bỏ lặng lẽ.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>EventBridge</b> → <b>Rules</b> → <b>Create rule</b>. Tên <code>tracuu-lab-doc-uploaded</code>, bus <b>default</b>, loại <b>Rule with an event pattern</b>.</li>
+<li>Event source <b>AWS events</b>; chọn pattern tuỳ chỉnh (<b>Custom pattern</b>) và dán JSON <code>pattern.json</code> ở khung CLI. Target: <b>SQS queue</b> = <code>tracuu-lab-ingest</code>. Tag <code>project=aws-lab</code>.</li>
+<li>Tạo rule thứ hai <code>tracuu-lab-poll</code>: loại <b>Schedule</b>, <b>Rate expression</b> = <code>1 minute</code>, target <b>Lambda function</b> = <code>tracuu-lab-poll</code>.</li>
+<li>Kiểm tra: hàng đợi <code>tracuu-lab-ingest</code> → tab <b>Access policy</b> phải có statement cho <code>events.amazonaws.com</code> (console thường tự thêm; nếu không, thêm tay theo mẫu CLI).</li>
+</ol></div></details>
+<details class="how"><summary>AWS CLI</summary><div><pre><code>cat &gt; pattern.json &lt;&lt;EOF
+{"source":["aws.s3"],"detail-type":["Object Created"],"detail":{"bucket":{"name":["$DOCS_BUCKET"]},"object":{"key":[{"prefix":"docs/"}]}}}
+EOF
+save RULE_ARN $(aws events put-rule --name tracuu-lab-doc-uploaded --event-pattern file://pattern.json \
+  --tags Key=project,Value=aws-lab --query RuleArn --output text)
+aws events put-targets --rule tracuu-lab-doc-uploaded --targets "Id=ingest,Arn=$INGEST_Q_ARN"
+
+cat &gt; q-policy.json &lt;&lt;EOF
+{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"events.amazonaws.com"},"Action":"sqs:SendMessage",
+"Resource":"$INGEST_Q_ARN","Condition":{"ArnEquals":{"aws:SourceArn":"$RULE_ARN"}}}]}
+EOF
+jq -n --rawfile p q-policy.json '{Policy:$p}' &gt; q-attr.json
+aws sqs set-queue-attributes --queue-url $INGEST_Q_URL --attributes file://q-attr.json
+
+# lịch mỗi phút gọi hàm poll
+save POLL_RULE_ARN $(aws events put-rule --name tracuu-lab-poll --schedule-expression "rate(1 minute)" \
+  --tags Key=project,Value=aws-lab --query RuleArn --output text)
+aws events put-targets --rule tracuu-lab-poll --targets "Id=poll,Arn=$POLL_FN_ARN"
+aws lambda add-permission --function-name tracuu-lab-poll --statement-id events-poll \
+  --action lambda:InvokeFunction --principal events.amazonaws.com --source-arn $POLL_RULE_ARN</code></pre>
+<p><i>Ý nghĩa:</i> <code>add-permission</code> là resource policy của Lambda, cho EventBridge quyền gọi hàm. Điều kiện <code>aws:SourceArn</code> giới hạn đúng rule này, chặn rule khác lợi dụng.</p></div></details>
+</div>
+
+<div class="step"><h3><span class="id">B5</span>Kiểm thử pipeline</h3>
+<div class="why">Các Lambda chỉ cập nhật tài liệu <i>đã có</i> trong DynamoDB (bình thường do ứng dụng tạo khi người dùng upload). Vì chưa có ứng dụng, bạn tạo bản ghi đó bằng tay rồi tải tệp lên và quan sát trạng thái.</div>
+<details class="how" open><summary>AWS CLI</summary><div><pre><code># 1. bản ghi tài liệu ở trạng thái UPLOADING (giống ứng dụng tạo)
+aws dynamodb put-item --table-name $TABLE --item '{"PK":{"S":"DOC#demo2"},"SK":{"S":"META"},"id":{"S":"demo2"},
+ "title":{"S":"ghi-chu"},"type":{"S":"PDF"},"groups":{"L":[{"S":"Toàn công ty"}]},"status":{"S":"UPLOADING"},"updated_at":{"S":"2026-10-22"}}'
+
+# 2. tải tệp + metadata (dùng lại biến $G của bước A7)
+echo "Ghi chú: phép năm là 12 ngày mỗi năm, phép chưa dùng phải dùng trước ngày 31 tháng 3." &gt; ghi-chu.txt
+cat &gt; ghi-chu.txt.metadata.json &lt;&lt;EOF
+{"metadataAttributes":{"doc_id":"demo2","$G":true}}
+EOF
+aws s3 cp ghi-chu.txt.metadata.json s3://$DOCS_BUCKET/docs/demo2/ghi-chu.txt.metadata.json
+aws s3 cp ghi-chu.txt s3://$DOCS_BUCKET/docs/demo2/ghi-chu.txt
+
+# 3. theo dõi: UPLOADED -> INGESTING -> INDEXED (mất vài phút)
+watch -n 15 "aws dynamodb get-item --table-name $TABLE --key '{\"PK\":{\"S\":\"DOC#demo2\"},\"SK\":{\"S\":\"META\"}}' --query 'Item.status.S'"</code></pre>
+<p>Nếu trạng thái đứng yên: xem <b>CloudWatch → Log groups → /aws/lambda/tracuu-lab-ingest</b> (và <code>-poll</code>), và <b>SQS → tracuu-lab-ingest → Monitoring</b> để thấy tin nhắn có vào không. Tin nhắn nằm trong DLQ nghĩa là hàm đã lỗi nhiều lần.</p></div></details>
+</div>
+
+<!-- ============================================================ C -->
+<h2 id="giai-doan-c">7. Giai đoạn C: đăng nhập và ứng dụng web (cần tên miền)</h2>
+<div class="alert"><b class="t">Giai đoạn này bắt đầu tính tiền theo giờ</b>ALB, Fargate và địa chỉ IPv4 công khai chạy liên tục từ lúc tạo. Chuẩn bị sẵn mọi thứ, làm liền một mạch, và dọn ngay khi xong. Cần có: một tên miền bạn kiểm soát DNS (ví dụ <code>tracuu.congty.vn</code>) và Docker Desktop trên máy để build image.</div>
+
+<div class="step"><h3><span class="id">C1</span>Chứng chỉ ACM <span class="pill free">Miễn phí</span></h3>
+<div class="why">ALB chỉ làm xác thực Cognito qua HTTPS, nên cần chứng chỉ cho tên miền. ACM cấp chứng chỉ công khai miễn phí; bạn chứng minh quyền sở hữu tên miền bằng một bản ghi DNS.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>Certificate Manager</b> (region Singapore) → <b>Request</b> → <b>Request a public certificate</b>. Domain name: tên miền của bạn. Validation: <b>DNS validation</b>. Tag <code>project=aws-lab</code>.</li>
+<li>Mở chứng chỉ, sao chép bản ghi <b>CNAME</b> (tên và giá trị) và tạo nó ở nơi quản lý DNS của tên miền (Route 53: nút <b>Create records in Route 53</b>).</li>
+<li>Đợi trạng thái <b>Issued</b> (vài phút), ghi lại <b>ARN</b> chứng chỉ.</li>
+</ol></div></details>
+<details class="how"><summary>AWS CLI</summary><div><pre><code>save DOMAIN tracuu.congty.vn          # đổi thành tên miền của bạn
+save CERT_ARN $(aws acm request-certificate --domain-name $DOMAIN --validation-method DNS \
+  --tags Key=project,Value=aws-lab --query CertificateArn --output text)
+aws acm describe-certificate --certificate-arn $CERT_ARN \
+  --query 'Certificate.DomainValidationOptions[0].ResourceRecord'    # tạo bản ghi CNAME này ở DNS
+aws acm wait certificate-validated --certificate-arn $CERT_ARN</code></pre></div></details>
+</div>
+
+<div class="step"><h3><span class="id">C2</span>Cognito user pool <span class="pill use">Theo mức dùng</span></h3>
+<div class="why">Cognito lưu tài khoản và xử lý đăng nhập, MFA. ALB đứng trước ứng dụng, chuyển người chưa đăng nhập sang Cognito, rồi gửi thông tin người dùng (gồm nhóm) cho Flask trong một header JWT do ALB ký. Nhóm đi trong thuộc tính tuỳ chỉnh <code>custom:groups</code>.</div>
+<div class="alert"><b class="t">Giữ gói Essentials, không bật Threat protection (gói Plus trả phí)</b>Xem mục 3.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>Cognito</b> → <b>User pools</b> → <b>Create user pool</b>. Application type <b>Traditional web application</b>. Tên <code>tracuu-lab</code>. Sign-in identifier: <b>Email</b>. Required attributes: <b>email</b>.</li>
+<li>Password policy: tối thiểu 12 ký tự, yêu cầu chữ hoa, thường, số, ký hiệu. <b>MFA enforcement: Require MFA</b>; phương thức <b>Authenticator apps</b> (không chọn SMS: SMS tính phí riêng qua SNS).</li>
+<li><b>Self-registration: tắt</b> (chỉ quản trị viên tạo tài khoản). Account recovery: email.</li>
+<li>Email: <b>Send email with Cognito</b> (đủ cho lab). <b>Hosted UI</b>: chọn Cognito domain prefix <code>tracuu-lab-&lt;ID tài khoản&gt;</code>.</li>
+<li>App client: tên <code>alb</code>, <b>Generate a client secret = bật</b>. Allowed callback URL: <code>https://&lt;tên miền&gt;/oauth2/idpresponse</code>. Sign-out URL: <code>https://&lt;tên miền&gt;/</code>. OAuth grant <b>Authorization code</b>; scope <b>openid, email, profile</b>.</li>
+<li>Sau khi tạo: tab <b>Sign-up</b> → <b>Custom attributes</b> → thêm <code>groups</code> (String, mutable, tối đa 2048 ký tự). Mở app client → <b>Attribute permissions</b>: cho phép đọc và ghi <code>custom:groups</code>, <code>email</code>, <code>name</code>.</li>
+<li>Tab <b>Users</b> → <b>Create user</b>: email của bạn, đặt <b>custom:groups</b> thành <code>Admin</code> (xem bước CLI), gửi lời mời qua email.</li>
+</ol>
+<p><i>Ý nghĩa:</i> ALB bắt buộc client có <b>secret</b>. URL <code>/oauth2/idpresponse</code> là địa chỉ cố định ALB dùng để nhận kết quả đăng nhập. <b>Authorization code</b> là luồng an toàn nhất (token không lộ ra trình duyệt). Tắt tự đăng ký để không ai tự tạo tài khoản truy cập tài liệu nội bộ. Ai có nhóm <code>Admin</code> là quản trị viên của ứng dụng.</p></div></details>
+<details class="how"><summary>AWS CLI</summary><div><pre><code>save POOL_ID $(aws cognito-idp create-user-pool --pool-name tracuu-lab --user-pool-tier ESSENTIALS \
+  --mfa-configuration ON --auto-verified-attributes email --username-attributes email \
+  --admin-create-user-config AllowAdminCreateUserOnly=true \
+  --schema Name=email,Required=true,Mutable=true Name=groups,AttributeDataType=String,Mutable=true,StringAttributeConstraints={MaxLength=2048} \
+  --policies 'PasswordPolicy={MinimumLength=12,RequireUppercase=true,RequireLowercase=true,RequireNumbers=true,RequireSymbols=true}' \
+  --account-recovery-setting 'RecoveryMechanisms=[{Priority=1,Name=verified_email}]' \
+  --user-pool-tags project=aws-lab --query UserPool.Id --output text)
+aws cognito-idp set-user-pool-mfa-config --user-pool-id $POOL_ID --mfa-configuration ON \
+  --software-token-mfa-configuration Enabled=true
+
+save COG_PREFIX tracuu-lab-$ACCOUNT_ID
+aws cognito-idp create-user-pool-domain --domain $COG_PREFIX --user-pool-id $POOL_ID
+save CLIENT_ID $(aws cognito-idp create-user-pool-client --user-pool-id $POOL_ID --client-name alb --generate-secret \
+  --allowed-o-auth-flows code --allowed-o-auth-flows-user-pool-client --allowed-o-auth-scopes openid email profile \
+  --callback-urls https://$DOMAIN/oauth2/idpresponse --logout-urls https://$DOMAIN/ \
+  --supported-identity-providers COGNITO --prevent-user-existence-errors ENABLED \
+  --read-attributes email name custom:groups --write-attributes email name custom:groups \
+  --query UserPoolClient.ClientId --output text)
+save POOL_ARN arn:aws:cognito-idp:$AWS_REGION:$ACCOUNT_ID:userpool/$POOL_ID
+
+aws cognito-idp admin-create-user --user-pool-id $POOL_ID --username EMAIL_CUA_BAN \
+  --user-attributes Name=email,Value=EMAIL_CUA_BAN Name=email_verified,Value=true Name=custom:groups,Value=Admin</code></pre></div></details>
+</div>
+
+<div class="step"><h3><span class="id">C3</span>ECR và image ứng dụng <span class="pill use">Theo mức dùng</span></h3>
+<div class="why">Fargate chạy container từ một image. ECR là kho image riêng trong tài khoản của bạn. Dockerfile trong repo build giao diện React rồi đóng gói cùng Flask (gunicorn + gevent để giữ kết nối streaming).</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>ECR</b> → <b>Private repositories</b> → <b>Create repository</b>: tên <code>tracuu-lab</code>, tag mutability <b>Immutable</b> hoặc Mutable (lab dùng Mutable cho tiện), mã hoá mặc định, tag <code>project=aws-lab</code>.</li>
+<li>Mở repo → nút <b>View push commands</b>: console hiện đúng 4 lệnh đăng nhập, build, gắn tag và push cho tài khoản của bạn. Chạy chúng trên máy có Docker, trong thư mục <code>tracuu-ai</code> của mã nguồn.</li>
+</ol></div></details>
+<details class="how"><summary>AWS CLI (trên máy bạn, PowerShell hoặc bash, có Docker Desktop)</summary><div><pre><code># cần AWS CLI trên máy đã đăng nhập (nếu máy đặt AWS_PROFILE sai, bỏ biến đó đi hoặc tạo đúng profile)
+aws ecr create-repository --repository-name tracuu-lab --tags Key=project,Value=aws-lab --region ap-southeast-1
+aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin ACCOUNT_ID.dkr.ecr.ap-southeast-1.amazonaws.com
+cd tracuu-ai
+docker build --platform linux/amd64 -t ACCOUNT_ID.dkr.ecr.ap-southeast-1.amazonaws.com/tracuu-lab:latest .
+docker push ACCOUNT_ID.dkr.ecr.ap-southeast-1.amazonaws.com/tracuu-lab:latest</code></pre>
+<p><i>Ý nghĩa:</i> <code>--platform linux/amd64</code> đảm bảo image khớp với Fargate x86 kể cả khi bạn build trên máy Arm.</p>
+<p>Trở lại CloudShell: <code>save IMAGE ACCOUNT_ID.dkr.ecr.ap-southeast-1.amazonaws.com/tracuu-lab:latest</code> (thay ACCOUNT_ID).</p></div></details>
+</div>
+
+<div class="step"><h3><span class="id">C4</span>IAM cho container (hai role) <span class="pill free">Miễn phí</span></h3>
+<div class="why">ECS dùng hai role khác nhau, dễ nhầm. <b>Execution role</b> do ECS dùng để kéo image từ ECR và ghi log. <b>Task role</b> do code của bạn dùng để gọi DynamoDB, S3, Bedrock. Tách ra để code ứng dụng không có quyền kéo image và ngược lại.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>IAM → Roles → Create role</b> → <b>AWS service → Elastic Container Service → Elastic Container Service Task</b>. Gắn <b>AmazonECSTaskExecutionRolePolicy</b>. Tên <code>tracuu-lab-exec</code>.</li>
+<li>Tạo role thứ hai cùng loại, tên <code>tracuu-lab-task</code>, không gắn managed policy; thêm inline policy <code>task-policy.json</code> ở khung CLI.</li>
+</ol></div></details>
+<details class="how"><summary>AWS CLI</summary><div><pre><code>cat &gt; ecs-trust.json &lt;&lt;'EOF'
+{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}
+EOF
+cat &gt; task-policy.json &lt;&lt;EOF
+{"Version":"2012-10-17","Statement":[
+{"Effect":"Allow","Action":["dynamodb:GetItem","dynamodb:PutItem","dynamodb:UpdateItem","dynamodb:DeleteItem","dynamodb:Query","dynamodb:Scan","dynamodb:BatchGetItem","dynamodb:BatchWriteItem"],
+ "Resource":["arn:aws:dynamodb:$AWS_REGION:$ACCOUNT_ID:table/$TABLE","arn:aws:dynamodb:$AWS_REGION:$ACCOUNT_ID:table/$TABLE/index/*"]},
+{"Effect":"Allow","Action":["s3:GetObject","s3:PutObject","s3:DeleteObject"],"Resource":"arn:aws:s3:::$DOCS_BUCKET/*"},
+{"Effect":"Allow","Action":["kms:Decrypt","kms:GenerateDataKey"],"Resource":"$KEY_ARN"},
+{"Effect":"Allow","Action":["bedrock:Retrieve","bedrock:StartIngestionJob","bedrock:GetIngestionJob"],"Resource":"$KB_ARN"},
+{"Effect":"Allow","Action":"bedrock:RetrieveAndGenerate","Resource":"*"},
+{"Effect":"Allow","Action":["bedrock:InvokeModel","bedrock:InvokeModelWithResponseStream"],"Resource":["$MODEL_ARN","arn:aws:bedrock:*::foundation-model/*"]},
+{"Effect":"Allow","Action":"bedrock:ApplyGuardrail","Resource":"$GUARDRAIL_ARN"}]}
+EOF
+aws iam create-role --role-name tracuu-lab-exec --assume-role-policy-document file://ecs-trust.json --tags Key=project,Value=aws-lab
+aws iam attach-role-policy --role-name tracuu-lab-exec --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+aws iam create-role --role-name tracuu-lab-task --assume-role-policy-document file://ecs-trust.json --tags Key=project,Value=aws-lab
+aws iam put-role-policy --role-name tracuu-lab-task --policy-name app --policy-document file://task-policy.json
+save EXEC_ROLE_ARN arn:aws:iam::$ACCOUNT_ID:role/tracuu-lab-exec
+save TASK_ROLE_ARN arn:aws:iam::$ACCOUNT_ID:role/tracuu-lab-task</code></pre></div></details>
+</div>
+
+<div class="step"><h3><span class="id">C5</span>Security group và mạng <span class="pill free">Miễn phí</span></h3>
+<div class="why">Dùng <b>VPC mặc định</b>: nó đã có subnet public ở mỗi vùng sẵn sàng, đủ cho ALB (cần tối thiểu 2 subnet ở 2 AZ) và không cần NAT. Security group là tường lửa: ALB nhận 80/443 từ Internet; container chỉ nhận cổng 8000 <b>từ ALB</b>. Vì container có IP công khai, security group này là lớp bảo vệ duy nhất, nên tuyệt đối không mở 8000 cho mọi người.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>VPC → Security groups → Create</b>: <code>tracuu-lab-alb</code>, VPC mặc định, inbound HTTP 80 và HTTPS 443 từ <code>0.0.0.0/0</code>.</li>
+<li>Tạo <code>tracuu-lab-svc</code>: inbound <b>Custom TCP 8000</b>, Source = <b>security group</b> <code>tracuu-lab-alb</code> (chọn SG, không nhập IP).</li>
+<li>Tag cả hai <code>project=aws-lab</code>. Xem danh sách subnet mặc định ở <b>VPC → Subnets</b> (cột Default for AZ = Yes), ghi lại ít nhất 2 subnet ID ở 2 AZ khác nhau.</li>
+</ol></div></details>
+<details class="how"><summary>AWS CLI</summary><div><pre><code>save VPC_ID $(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query 'Vpcs[0].VpcId' --output text)
+save SUBNETS $(aws ec2 describe-subnets --filters Name=vpc-id,Values=$VPC_ID Name=default-for-az,Values=true \
+  --query 'Subnets[].SubnetId' --output text | tr '\t' ',')
+TAG='ResourceType=security-group,Tags=[{Key=project,Value=aws-lab}]'
+save ALB_SG $(aws ec2 create-security-group --group-name tracuu-lab-alb --description alb --vpc-id $VPC_ID \
+  --tag-specifications "$TAG" --query GroupId --output text)
+save SVC_SG $(aws ec2 create-security-group --group-name tracuu-lab-svc --description svc --vpc-id $VPC_ID \
+  --tag-specifications "$TAG" --query GroupId --output text)
+aws ec2 authorize-security-group-ingress --group-id $ALB_SG --ip-permissions \
+  'IpProtocol=tcp,FromPort=80,ToPort=80,IpRanges=[{CidrIp=0.0.0.0/0}]' 'IpProtocol=tcp,FromPort=443,ToPort=443,IpRanges=[{CidrIp=0.0.0.0/0}]'
+aws ec2 authorize-security-group-ingress --group-id $SVC_SG --protocol tcp --port 8000 --source-group $ALB_SG</code></pre></div></details>
+</div>
+
+<div class="step"><h3><span class="id">C6</span>Application Load Balancer <span class="pill paid">Theo giờ</span></h3>
+<div class="why">ALB là cổng vào duy nhất. Nó giải mã HTTPS, bắt người chưa đăng nhập sang Cognito, rồi chuyển request tới container. Ba quy tắc: <code>/healthz</code> đi thẳng (để kiểm tra sức khoẻ không cần đăng nhập); <code>/api/*</code> trả <b>401</b> khi hết phiên (vì <code>fetch</code> của trình duyệt không theo được chuyển hướng đăng nhập); mọi đường dẫn còn lại chuyển hướng sang Cognito.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>EC2 → Target groups → Create</b>: loại <b>IP addresses</b>, tên <code>tracuu-lab-tg</code>, HTTP cổng <b>8000</b>, VPC mặc định. Health check path <code>/healthz</code>. Sau khi tạo: Attributes → <b>Deregistration delay = 30</b> giây. Chưa đăng ký target (ECS tự làm).</li>
+<li><b>EC2 → Load balancers → Create → Application Load Balancer</b>: tên <code>tracuu-lab</code>, <b>Internet-facing</b>, IPv4, VPC mặc định, chọn ≥ 2 subnet, security group <code>tracuu-lab-alb</code>. Tag <code>project=aws-lab</code>.</li>
+<li>Listener <b>HTTPS:443</b>: chọn chứng chỉ ACM; default action: <b>Authenticate</b> → <b>Cognito</b> (chọn user pool, app client, domain) với <b>Action on unauthenticated request = Authenticate</b>, rồi <b>Forward</b> tới <code>tracuu-lab-tg</code>. Listener <b>HTTP:80</b>: redirect sang HTTPS 443.</li>
+<li>Sau khi tạo, mở listener 443 → <b>Manage rules → Add rule</b>: (a) ưu tiên 1, điều kiện path <code>/healthz</code>, action Forward <i>không có</i> xác thực; (b) ưu tiên 10, path <code>/api/*</code>, action Authenticate Cognito với <b>Action on unauthenticated request = Deny</b>, rồi Forward.</li>
+<li>Load balancer → <b>Attributes</b>: bật <b>Drop invalid header fields</b>; <b>Idle timeout = 120</b> giây.</li>
+</ol>
+<p><i>Ý nghĩa:</i> Idle timeout 120 giây giữ cho kết nối streaming câu trả lời (SSE) không bị cắt. <b>Drop invalid header fields</b> chặn một lớp tấn công qua header sai chuẩn.</p></div></details>
+<details class="how"><summary>AWS CLI</summary><div><pre><code>save TG_ARN $(aws elbv2 create-target-group --name tracuu-lab-tg --protocol HTTP --port 8000 --vpc-id $VPC_ID \
+  --target-type ip --health-check-path /healthz --matcher HttpCode=200 --health-check-interval-seconds 15 \
+  --tags Key=project,Value=aws-lab --query 'TargetGroups[0].TargetGroupArn' --output text)
+aws elbv2 modify-target-group-attributes --target-group-arn $TG_ARN --attributes Key=deregistration_delay.timeout_seconds,Value=30
+
+save ALB_ARN $(aws elbv2 create-load-balancer --name tracuu-lab --scheme internet-facing --type application \
+  --subnets $(echo $SUBNETS | tr ',' ' ') --security-groups $ALB_SG --tags Key=project,Value=aws-lab \
+  --query 'LoadBalancers[0].LoadBalancerArn' --output text)
+aws elbv2 modify-load-balancer-attributes --load-balancer-arn $ALB_ARN --attributes \
+  Key=idle_timeout.timeout_seconds,Value=120 Key=routing.http.drop_invalid_header_fields.enabled,Value=true
+save ALB_DNS $(aws elbv2 describe-load-balancers --load-balancer-arns $ALB_ARN --query 'LoadBalancers[0].DNSName' --output text)
+
+auth() { cat &lt;&lt;EOF
+[{"Type":"authenticate-cognito","Order":1,"AuthenticateCognitoConfig":{"UserPoolArn":"$POOL_ARN","UserPoolClientId":"$CLIENT_ID",
+"UserPoolDomain":"$COG_PREFIX","SessionCookieName":"AWSELBAuthSessionCookie","Scope":"openid email profile","SessionTimeout":28800,
+"OnUnauthenticatedRequest":"$1"}},{"Type":"forward","Order":2,"TargetGroupArn":"$TG_ARN"}]
+EOF
+}
+auth authenticate &gt; act-auth.json; auth deny &gt; act-deny.json
+
+save HTTPS_ARN $(aws elbv2 create-listener --load-balancer-arn $ALB_ARN --protocol HTTPS --port 443 \
+  --certificates CertificateArn=$CERT_ARN --ssl-policy ELBSecurityPolicy-TLS13-1-2-2021-06 \
+  --default-actions file://act-auth.json --query 'Listeners[0].ListenerArn' --output text)
+aws elbv2 create-rule --listener-arn $HTTPS_ARN --priority 1 \
+  --conditions Field=path-pattern,Values=/healthz --actions Type=forward,TargetGroupArn=$TG_ARN
+aws elbv2 create-rule --listener-arn $HTTPS_ARN --priority 10 \
+  --conditions Field=path-pattern,Values='/api/*' --actions file://act-deny.json
+aws elbv2 create-listener --load-balancer-arn $ALB_ARN --protocol HTTP --port 80 \
+  --default-actions 'Type=redirect,RedirectConfig={Protocol=HTTPS,Port=443,StatusCode=HTTP_301}'</code></pre></div></details>
+</div>
+
+<div class="step"><h3><span class="id">C7</span>ECS cluster, task definition và service <span class="pill paid">Theo giờ</span></h3>
+<div class="why"><b>Cluster</b> là nhóm logic. <b>Task definition</b> là công thức chạy container (image, CPU/RAM, biến môi trường, role). <b>Service</b> giữ số lượng task mong muốn và tự thay task hỏng. Biến môi trường <code>BACKEND=aws</code> và <code>AUTH_MODE=alb</code> chuyển ứng dụng sang chế độ thật: đọc danh tính từ JWT của ALB. Ứng dụng từ chối khởi động nếu bạn vô tình đặt <code>AUTH_MODE=dev</code> cùng <code>BACKEND=aws</code>.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>ECS → Clusters → Create cluster</b>: <code>tracuu-lab</code>, hạ tầng <b>AWS Fargate</b>. Tag <code>project=aws-lab</code>.</li>
+<li><b>Task definitions → Create new</b> (từ JSON được; cách nhanh là dán file <code>taskdef.json</code> ở khung CLI): Fargate, X86_64, 0,5 vCPU, 1 GB, task role <code>tracuu-lab-task</code>, execution role <code>tracuu-lab-exec</code>, container <code>web</code>, cổng 8000, log driver awslogs.</li>
+<li>Cluster → <b>Services → Create</b>: launch type Fargate, task definition vừa tạo, <b>Desired tasks = 1</b> (lab; production 2). Networking: VPC mặc định, ≥ 2 subnet, security group <code>tracuu-lab-svc</code>, <b>Public IP = Turned on</b>. Load balancing: <b>Application Load Balancer</b> hiện có, container <code>web:8000</code>, target group <code>tracuu-lab-tg</code>, health check grace period <b>60</b> giây.</li>
+<li>Bật <b>Deployment circuit breaker</b> kèm <b>Rollback on failure</b>.</li>
+</ol>
+<p><i>Ý nghĩa:</i> Public IP bật là bắt buộc để task kéo image từ ECR và gọi Bedrock khi không có NAT. Circuit breaker tự quay về bản trước nếu bản mới không qua được health check.</p></div></details>
+<details class="how"><summary>AWS CLI</summary><div><pre><code>aws logs create-log-group --log-group-name /ecs/tracuu-lab --tags project=aws-lab
+aws logs put-retention-policy --log-group-name /ecs/tracuu-lab --retention-in-days 7
+aws ecs create-cluster --cluster-name tracuu-lab --tags key=project,value=aws-lab
+
+LOGOUT="https://$COG_PREFIX.auth.$AWS_REGION.amazoncognito.com/logout?client_id=$CLIENT_ID&amp;logout_uri=https://$DOMAIN/"
+cat &gt; taskdef.json &lt;&lt;EOF
+{"family":"tracuu-lab","cpu":"512","memory":"1024","networkMode":"awsvpc","requiresCompatibilities":["FARGATE"],
+"runtimePlatform":{"cpuArchitecture":"X86_64","operatingSystemFamily":"LINUX"},
+"executionRoleArn":"$EXEC_ROLE_ARN","taskRoleArn":"$TASK_ROLE_ARN",
+"containerDefinitions":[{"name":"web","image":"$IMAGE","essential":true,"stopTimeout":60,
+"portMappings":[{"containerPort":8000,"protocol":"tcp"}],
+"environment":[{"name":"BACKEND","value":"aws"},{"name":"AUTH_MODE","value":"alb"},{"name":"SEARCH_TYPE","value":"SEMANTIC"},
+{"name":"AWS_REGION","value":"$AWS_REGION"},{"name":"AWS_DEFAULT_REGION","value":"$AWS_REGION"},
+{"name":"KB_ID","value":"$KB_ID"},{"name":"KB_DATA_SOURCE_ID","value":"$DS_ID"},{"name":"MODEL_ARN","value":"$MODEL_ARN"},
+{"name":"GUARDRAIL_ID","value":"$GUARDRAIL_ID"},{"name":"GUARDRAIL_VERSION","value":"$GUARDRAIL_VERSION"},
+{"name":"DOCS_BUCKET","value":"$DOCS_BUCKET"},{"name":"TABLE_NAME","value":"$TABLE"},
+{"name":"GROUPS_CLAIM","value":"custom:groups"},{"name":"ADMIN_GROUP","value":"Admin"},{"name":"LOGOUT_URL","value":"$LOGOUT"}],
+"logConfiguration":{"logDriver":"awslogs","options":{"awslogs-group":"/ecs/tracuu-lab","awslogs-region":"$AWS_REGION","awslogs-stream-prefix":"web"}}}],
+"tags":[{"key":"project","value":"aws-lab"}]}
+EOF
+aws ecs register-task-definition --cli-input-json file://taskdef.json --query taskDefinition.taskDefinitionArn
+
+aws ecs create-service --cluster tracuu-lab --service-name web --task-definition tracuu-lab --desired-count 1 \
+  --launch-type FARGATE --health-check-grace-period-seconds 60 \
+  --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SVC_SG],assignPublicIp=ENABLED}" \
+  --load-balancers "targetGroupArn=$TG_ARN,containerName=web,containerPort=8000" \
+  --deployment-configuration "deploymentCircuitBreaker={enable=true,rollback=true},minimumHealthyPercent=100,maximumPercent=200" \
+  --tags key=project,value=aws-lab
+aws ecs wait services-stable --cluster tracuu-lab --services web</code></pre></div></details>
+</div>
+
+<div class="step"><h3><span class="id">C8</span>Trỏ DNS và sửa CORS <span class="pill paid">Route 53: theo giờ (nếu dùng)</span></h3>
+<div class="why">Tên miền phải trỏ về ALB thì trình duyệt mới tới được ứng dụng. CORS của bucket phải khớp đúng origin của trang, nếu không upload tệp báo lỗi.</div>
+<details class="how" open><summary>Thao tác</summary><div><ol>
+<li>Ở nơi quản lý DNS, tạo bản ghi <b>CNAME</b> từ tên miền của bạn tới giá trị <code>ALB_DNS</code> (CLI: <code>echo $ALB_DNS</code>). Với Route 53 có thể dùng bản ghi <b>A – Alias</b> trỏ tới ALB (không tính phí truy vấn alias).</li>
+<li>Cập nhật <code>cors.json</code> ở bước A2 với origin <code>https://&lt;tên miền&gt;</code> rồi chạy lại <code>aws s3api put-bucket-cors</code>.</li>
+<li>Chờ DNS lan truyền (vài phút) rồi mở <code>https://&lt;tên miền&gt;/healthz</code>: phải thấy <code>ok</code>.</li>
+</ol></div></details>
+</div>
+
+<div class="step"><h3><span class="id">C9</span>AWS WAF (tuỳ chọn) <span class="pill paid">Theo giờ</span></h3>
+<div class="why">WAF lọc request trước khi tới ALB: bộ luật có sẵn của AWS chặn các mẫu tấn công phổ biến; luật giới hạn tốc độ chặn một IP gửi quá nhiều request. Nếu cả công ty dùng chung dải IP, thêm luật chỉ cho phép dải đó.</div>
+<details class="how" open><summary>AWS Console</summary><div><ol>
+<li><b>WAF &amp; Shield → Web ACLs → Create</b>: Resource type <b>Regional resources</b>, region Singapore, tên <code>tracuu-lab</code>, tag <code>project=aws-lab</code>. Associated resource: thêm ALB <code>tracuu-lab</code>.</li>
+<li><b>Add rules → Add managed rule groups → AWS managed rule groups</b>: bật <b>Core rule set</b> (Common) và <b>Known bad inputs</b>.</li>
+<li><b>Add rules → Add my own rules → Rate-based rule</b>: giới hạn 2000 request/5 phút theo IP, hành động <b>Block</b>.</li>
+<li>Default action <b>Allow</b>. Tạo.</li>
+</ol></div></details>
+</div>
+
+<div class="step"><h3><span class="id">C10</span>Kiểm tra toàn bộ</h3>
+<div class="why">Chạy theo thứ tự này. Bước 4 quan trọng nhất vì nó xác nhận phân quyền thật.</div>
+<details class="how" open><summary>Danh sách kiểm tra</summary><div><ol>
+<li>Mở <code>https://&lt;tên miền&gt;</code>: được chuyển sang trang đăng nhập Cognito. Đăng nhập lần đầu: đặt mật khẩu mới và quét mã QR bằng ứng dụng xác thực (MFA).</li>
+<li>Vào ứng dụng, thấy mục <b>Quản trị</b> (vì nhóm <code>Admin</code>). Vào Thư viện, tải một tệp PDF lên: trạng thái đi qua các bước đến "Đã lập chỉ mục".</li>
+<li>Hỏi một câu liên quan: có câu trả lời kèm nguồn trích dẫn.</li>
+<li><b>Kiểm tra phân quyền:</b> tạo thêm người dùng thứ hai (<code>custom:groups</code> = <code>Mua sam</code>), tải tài liệu cho nhóm <code>Tài chính</code> bằng người dùng đầu, rồi đăng nhập người thứ hai: người này <b>không được</b> thấy tài liệu đó trong tìm kiếm, thư viện và câu trả lời.</li>
+<li>Nếu <code>/api/*</code> trả 401 ngay sau khi đăng nhập: xem log container ở <b>CloudWatch → /ecs/tracuu-lab</b>; thường do container không ra được Internet để lấy khoá công khai của ALB (kiểm tra Public IP = bật).</li>
+</ol></div></details>
+</div>
+
+<!-- ============================================================ 8 -->
+<h2 id="ket-thuc">8. Kết thúc, đối chiếu và dọn dẹp</h2>
+
+<h3>Đối chiếu với best practice và môi trường production</h3>
+<div class="scroll"><table>
+<thead><tr><th>Chủ đề</th><th>Bài lab này</th><th>Production nên làm</th></tr></thead>
+<tbody>
+<tr><td>Tạo hạ tầng</td><td>Bằng tay qua console để học</td><td>Hạ tầng dưới dạng code (CDK/Terraform): lặp lại được, có review, có lịch sử. Thư mục <code>infra/</code> của repo chính là bản đó.</td></tr>
+<tr><td>Mạng</td><td>Container ở subnet public, có IP công khai, chỉ ALB vào được</td><td>Container ở subnet private; ra AWS qua VPC endpoint hoặc NAT. Đắt hơn nhưng bề mặt tấn công nhỏ hơn.</td></tr>
+<tr><td>Tìm kiếm</td><td>S3 Vectors, chỉ ngữ nghĩa</td><td>Cân nhắc OpenSearch (hybrid, khớp từ khoá và mã số tốt hơn) khi chất lượng tìm kiếm là ưu tiên.</td></tr>
+<tr><td>Độ sẵn sàng</td><td>1 task, 1 job đồng bộ tại một thời điểm</td><td>Tối thiểu 2 task ở 2 AZ, auto scaling, cảnh báo CloudWatch.</td></tr>
+<tr><td>Dữ liệu</td><td>DynamoDB khoá AWS, không PITR</td><td>Khoá KMS riêng, point-in-time recovery, deletion protection, sao lưu.</td></tr>
+<tr><td>IAM</td><td>Role riêng cho từng thành phần, quyền theo tài nguyên (đã gần chuẩn)</td><td>Giữ nguyên nguyên tắc này; rà soát định kỳ bằng IAM Access Analyzer.</td></tr>
+<tr><td>Đăng nhập</td><td>Cognito tự quản lý tài khoản</td><td>Liên kết SSO (SAML) với IdP công ty để nhóm đồng bộ tự động và thu hồi quyền khi nhân viên nghỉ.</td></tr>
+<tr><td>Bảo vệ web</td><td>WAF tuỳ chọn</td><td>Bật WAF, giới hạn IP công ty nếu là ứng dụng nội bộ, thêm CloudFront nếu phục vụ nhiều vùng.</td></tr>
+<tr><td>Giám sát và kiểm toán</td><td>Log mặc định 7 ngày</td><td>CloudTrail toàn tài khoản, log truy cập ALB, bật Bedrock invocation logging, lưu log lâu hơn.</td></tr>
+<tr><td>Chi phí</td><td>Một budget thủ công</td><td>Budget theo từng môi trường, cost allocation tag, cảnh báo bất thường.</td></tr>
+<tr><td>Môi trường</td><td>Một môi trường duy nhất</td><td>Tách dev/staging/prod, tốt nhất mỗi môi trường một tài khoản.</td></tr>
+</tbody></table></div>
+
+<h3>Dọn dẹp để tránh phát sinh chi phí</h3>
+<div class="alert"><b class="t">Dọn ngay khi làm xong, đặc biệt các mục "Theo giờ"</b>Thứ tự bên dưới đã tính đến phụ thuộc: xoá cái đứng trước trước, vì tài nguyên đang được dùng không xoá được.</div>
+<div class="scroll"><table>
+<thead><tr><th>#</th><th>Tài nguyên</th><th>Chi phí nếu để lại</th><th>Cách xoá</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>WAF web ACL</td><td><span class="pill paid">Theo giờ</span></td><td>WAF → Web ACLs → gỡ liên kết ALB → Delete.</td></tr>
+<tr><td>2</td><td>ECS service, cluster, task definition</td><td><span class="pill paid">Theo giờ</span></td><td>Service: cập nhật <b>desired count = 0</b> rồi Delete (hoặc Delete → Force). Sau đó xoá cluster; task definition: Deregister.</td></tr>
+<tr><td>3</td><td>ALB, listener, target group</td><td><span class="pill paid">Theo giờ</span></td><td>EC2 → Load balancers → Delete (xoá luôn listener và rule); sau đó xoá target group.</td></tr>
+<tr><td>4</td><td>Bản ghi DNS (CNAME/Alias), hosted zone Route 53</td><td><span class="pill paid">Theo giờ</span></td><td>Xoá bản ghi trỏ về ALB; xoá hosted zone nếu tạo riêng cho lab.</td></tr>
+<tr><td>5</td><td>Cognito user pool (và domain)</td><td><span class="pill use">Theo mức dùng</span></td><td>Xoá <b>domain</b> trước (tab App integration), tắt deletion protection nếu có, rồi Delete user pool.</td></tr>
+<tr><td>6</td><td>Chứng chỉ ACM</td><td><span class="pill free">Miễn phí</span></td><td>Xoá được sau khi ALB đã xoá (chứng chỉ đang dùng không xoá được).</td></tr>
+<tr><td>7</td><td>Quy tắc EventBridge (2)</td><td><span class="pill free">Miễn phí</span></td><td>Gỡ target (Remove targets) rồi Delete rule.</td></tr>
+<tr><td>8</td><td>Lambda (3) và event source mapping</td><td><span class="pill use">Theo mức dùng</span></td><td>Lambda → Delete function (mapping bị xoá cùng).</td></tr>
+<tr><td>9</td><td>SQS (5 hàng đợi)</td><td><span class="pill use">Theo mức dùng</span></td><td>SQS → chọn từng hàng đợi → Delete.</td></tr>
+<tr><td>10</td><td>Bedrock Knowledge Base (data source rồi KB)</td><td><span class="pill free">Miễn phí</span></td><td>Xoá data source, rồi Knowledge Base. Vector trong index <b>không tự mất</b> nếu chính sách xoá của data source là Retain.</td></tr>
+<tr><td>11</td><td>S3 vector index rồi vector bucket</td><td><span class="pill use">Theo mức dùng</span></td><td>S3 → Vector buckets → xoá index, sau đó xoá bucket.</td></tr>
+<tr><td>12</td><td>Guardrail</td><td><span class="pill use">Theo mức dùng</span></td><td>Bedrock → Guardrails → Delete.</td></tr>
+<tr><td>13</td><td>DynamoDB bảng <code>tracuu-lab-app</code></td><td><span class="pill use">Theo mức dùng</span></td><td>DynamoDB → Tables → Delete (bỏ chọn "Create backup" nếu không cần).</td></tr>
+<tr><td>14</td><td>S3 bucket tài liệu</td><td><span class="pill use">Theo mức dùng</span></td><td>Bucket bật versioning nên cần <b>Empty</b> (xoá cả các phiên bản cũ) rồi mới Delete bucket.</td></tr>
+<tr><td>15</td><td>ECR repository</td><td><span class="pill use">Theo mức dùng</span></td><td>ECR → Delete repository (xoá luôn image).</td></tr>
+<tr><td>16</td><td>CloudWatch log groups (<code>/ecs/tracuu-lab</code>, <code>/aws/lambda/tracuu-lab-*</code>)</td><td><span class="pill use">Theo mức dùng</span></td><td>CloudWatch → Log groups → Delete.</td></tr>
+<tr><td>17</td><td>Security group (2)</td><td><span class="pill free">Miễn phí</span></td><td>Xoá sau ALB và service (đang dùng thì không xoá được).</td></tr>
+<tr><td>18</td><td>IAM role (4): kb, lambda, exec, task</td><td><span class="pill free">Miễn phí</span></td><td>IAM → Roles → Delete (nhớ rằng role console tự tạo cho KB có tên riêng).</td></tr>
+<tr><td>19</td><td>KMS key <code>tracuu-lab</code></td><td><span class="pill paid">Theo giờ</span></td><td><b>Schedule key deletion</b> (chờ 7–30 ngày). Khoá đang chờ xoá không bị tính phí; làm bước này cuối cùng, sau khi bucket đã xoá.</td></tr>
+</tbody></table></div>
+<h4>Kiểm tra không còn sót</h4>
+<pre><code>aws resourcegroupstaggingapi get-resources --tag-filters Key=project,Values=aws-lab \
+  --query 'ResourceTagMappingList[].ResourceARN' --output text | tr '\t' '\n'
+# kết quả rỗng là tốt. Rồi xem Billing → Bills (hoặc Cost Explorer) sau 1-2 ngày để chắc không còn khoản phí mới.</code></pre>
+
+<p class="note">Cách dọn nhanh nhất trên thực tế là xoá thủ công theo bảng này vì tài nguyên tạo bằng tay không nằm trong một "stack" duy nhất. Đó cũng là lý do ở production người ta dùng hạ tầng dưới dạng code: một lệnh <code>cdk destroy</code> thay cho 19 dòng ở trên.</p>
+
+</main>
+</body>
+</html>

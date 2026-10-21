@@ -65,14 +65,16 @@ def test_table_matches_uml_single_table_design(t):
 
 # ---------- RAG
 
-def test_knowledge_base_uses_s3_vectors_with_titan_v2(t):
+def test_knowledge_base_uses_s3_vectors_with_cohere_multilingual(t):
     kb = only(t, "AWS::Bedrock::KnowledgeBase")
     assert kb["StorageConfiguration"]["Type"] == "S3_VECTORS"
     assert "IndexArn" in kb["StorageConfiguration"]["S3VectorsConfiguration"]
-    assert "amazon.titan-embed-text-v2:0" in json.dumps(kb["KnowledgeBaseConfiguration"])
+    assert "foundation-model/cohere.embed-multilingual-v3" in json.dumps(kb["KnowledgeBaseConfiguration"])
+    role = " ".join(json.dumps(p) for k, p in t.find_resources("AWS::IAM::Policy").items() if k.startswith("RagKbRole"))
+    assert "cohere.embed-multilingual-v3" in role  # role của KB được phép gọi đúng model embedding
 
 
-def test_vector_index_matches_titan_dimension_and_keeps_bedrock_keys_non_filterable(t):
+def test_vector_index_matches_embedding_dimension_and_keeps_bedrock_keys_non_filterable(t):
     idx = only(t, "AWS::S3Vectors::Index")
     assert idx["Dimension"] == 1024 and idx["DataType"] == "float32" and idx["DistanceMetric"] == "cosine"
     assert set(idx["MetadataConfiguration"]["NonFilterableMetadataKeys"]) == {"AMAZON_BEDROCK_TEXT",
@@ -92,6 +94,15 @@ def test_no_opensearch_resources_remain(t):
     for type_ in ("AWS::OpenSearchServerless::Collection", "AWS::OpenSearchServerless::AccessPolicy",
                   "AWS::OpenSearchServerless::SecurityPolicy"):
         t.resource_count_is(type_, 0)
+
+
+def test_chunk_size_stays_under_cohere_input_limit_and_titan_override_works():
+    chunk = lambda t: only(t, "AWS::Bedrock::DataSource")["VectorIngestionConfiguration"]["ChunkingConfiguration"][
+        "SemanticChunkingConfiguration"]["MaxTokens"]
+    assert chunk(build()) == 400  # Cohere Embed v3 nhận tối đa ~512 token
+    titan = build(embedding_model_id="amazon.titan-embed-text-v2:0")
+    assert chunk(titan) == 512
+    assert "foundation-model/amazon.titan-embed-text-v2:0" in json.dumps(only(titan, "AWS::Bedrock::KnowledgeBase"))
 
 
 def test_data_source_scoped_to_docs_prefix_with_semantic_chunking(t):

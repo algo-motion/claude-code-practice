@@ -23,7 +23,7 @@ function Overview(){
   </>;
 }
 function KbConfig(){
-  const [c,setC]=useState({model:'Claude Sonnet',emb:'Titan Text Embeddings V2',chunk:'Theo ngữ nghĩa',size:512,overlap:15,topk:6,guard:true,rerank:true,pii:true});
+  const [c,setC]=useState({model:'Claude Sonnet',emb:'Cohere Embed Multilingual',chunk:'Theo ngữ nghĩa',size:512,overlap:15,topk:6,guard:true,rerank:true,pii:true});
   const [saved,setSaved]=useState(false);const [dirty,setDirty]=useState(false);
   const set=(k,v)=>{setC({...c,[k]:v});setDirty(true);setSaved(false)};
   const Tog=({k,l,d})=><div className="cfg-row"><div><b>{l}</b><div className="muted sm">{d}</div></div><button className={'toggle'+(c[k]?' on':'')} onClick={()=>set(k,!c[k])}><i></i></button></div>;

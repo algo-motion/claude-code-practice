@@ -51,7 +51,7 @@ pre{margin:0;background:#1d1a17;color:#ece5dc;border-radius:10px;padding:18px 20
 <div class="arrow">→</div>
 <div class="zone ai"><div class="zt">Amazon Bedrock · AI</div>
 <div class="node q i"><b>Bedrock Knowledge Bases</b><span>RetrieveAndGenerate (stream), chia đoạn ngữ nghĩa, trả về trích dẫn</span><div class="n q"><i>4</i></div><div class="n i"><i>5</i></div></div>
-<div class="node q i"><b>Titan Text Embeddings V2</b><span>Vector 1024 chiều, đa ngôn ngữ, hỗ trợ tiếng Việt</span><div class="n i"><i>5</i></div></div>
+<div class="node q i"><b>Cohere Embed Multilingual v3</b><span>Vector 1024 chiều, đa ngôn ngữ, hỗ trợ tiếng Việt; Titan V2 không có ở Singapore</span><div class="n i"><i>5</i></div></div>
 <div class="node q i"><b>S3 Vectors</b><span>Kho vector tính phí theo mức dùng; tìm kiếm ngữ nghĩa, lọc theo cờ nhóm</span><div class="n q"><i>5</i></div></div>
 <div class="node q"><b>Claude trên Bedrock</b><span>Sinh câu trả lời có trích dẫn; tóm tắt tài liệu</span><div class="n q"><i>6</i></div></div>
 <div class="node q"><b>Bedrock Guardrails</b><span>Lọc nội dung, chặn prompt injection, che số thẻ, mật khẩu và CCCD</span><div class="n q"><i>6</i></div></div>
@@ -82,7 +82,7 @@ pre{margin:0;background:#1d1a17;color:#ece5dc;border-radius:10px;padding:18px 20
 <li><span>Flask kiểm tra quyền và loại tệp (tối đa 50 MB), tạo <b>presigned URL</b>. Trình duyệt upload thẳng lên S3, không đi qua container.</span></li>
 <li><span>Flask ghi tệp <b>.metadata.json</b> (<code>doc_id</code> và cờ <code>g_&lt;nhóm&gt;</code> cho từng nhóm được chọn) cạnh tài liệu trên S3.</span></li>
 <li><span>Sự kiện S3 → <b>EventBridge → SQS</b> (gom lô 60 giây) → Lambda <code>ingest_trigger</code> gọi StartIngestionJob cho cả lô.</span></li>
-<li><span>Knowledge Base parse nội dung, chia đoạn, tạo embedding bằng <b>Titan V2</b> và ghi vào S3 Vectors.</span></li>
+<li><span>Knowledge Base parse nội dung, chia đoạn, tạo embedding bằng <b>Cohere Embed v3</b> và ghi vào S3 Vectors.</span></li>
 <li><span>Lambda <code>poll_jobs</code> (mỗi phút) cập nhật trạng thái job và tài liệu vào <b>DynamoDB</b> (UI hiện tiến trình), rồi đẩy việc tóm tắt vào SQS.</span></li>
 </ol></div>
 </div>

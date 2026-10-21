@@ -80,7 +80,7 @@ sequenceDiagram
     F->>D: Tạo hoặc nạp phiên chat, lưu tin nhắn người dùng
   end
   F->>KB: retrieve_and_generate_stream(question, filter, sessionId)
-  KB->>KB: Tạo embedding câu hỏi (Titan V2)
+  KB->>KB: Tạo embedding câu hỏi (Cohere Embed v3)
   KB->>VS: Tìm kiếm ngữ nghĩa top-k + filter cờ nhóm
   VS-->>KB: Các đoạn liên quan
   KB->>M: Prompt + ngữ cảnh

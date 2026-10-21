@@ -37,6 +37,8 @@ npm run build                         # tạo dist/, Flask tự phục vụ
 | `DOCS_BUCKET`, `TABLE_NAME` | Bucket tài liệu, bảng DynamoDB (CDK tự đặt tên và truyền vào) |
 | `GROUPS_CLAIM`, `ADMIN_GROUP`, `ALB_ARN`, `LOGOUT_URL` | Claim chứa nhóm, nhóm quản trị, ARN ALB để kiểm tra `signer`, URL đăng xuất Cognito |
 
+> Muốn học AWS bằng cách tự dựng từng tài nguyên trên console (có lệnh CLI đối chiếu, nhãn chi phí và phần dọn dẹp): mở `docs/aws-console-lab.html`. Sơ đồ định dạng draw.io: `docs/tracuu-ai-aws.drawio`.
+
 ## Hạ tầng AWS (CDK Python, thư mục `infra/`)
 
 Một stack `Tracuu` dựng kiến trúc trong `Kien truc AWS.html`, đã bỏ các khoản tốn kém cố định: KMS + S3 + DynamoDB,
@@ -46,7 +48,7 @@ ALB (HTTPS + xác thực Cognito), WAF, và chuỗi nạp tài liệu S3 → Eve
 ```
 cd infra
 python -m venv .venv && .venv\Scripts\pip install -r requirements.txt
-.venv\Scripts\python -m pytest                   # 25 test trên template CloudFormation, không cần AWS
+.venv\Scripts\python -m pytest                   # 26 test trên template CloudFormation, không cần AWS
 
 npm install -g aws-cdk                             # CLI, cần Docker đang chạy để build image
 cdk bootstrap                                      # một lần cho mỗi tài khoản/region
@@ -59,6 +61,9 @@ Context bắt buộc: `domain_name`, `certificate_arn` (ACM, cùng region), `mod
 (WAF chỉ cho các dải IP này), `saml_metadata_url` (+ `saml_email_attr`, `saml_name_attr`, `saml_groups_attr`),
 `hosted_zone_id` + `hosted_zone_name` (tự tạo bản ghi A), `cognito_prefix`, `desired_count`,
 `retain=false` (môi trường thử, `cdk destroy` xoá cả dữ liệu), `embedding_model_id`.
+
+**Mô hình embedding.** Mặc định là `cohere.embed-multilingual-v3` (1024 chiều, có tiếng Việt) vì Titan Text Embeddings V2 không có ở `ap-southeast-1`. Kiểm tra mô hình có trong vùng của bạn trước khi deploy:
+`aws bedrock list-foundation-models --region ap-southeast-1 --query "modelSummaries[?contains(modelId,'embed')].modelId"`. Chọn xong là cố định: đổi mô hình sau khi đã nạp tài liệu thì phải tạo lại chỉ mục vector và nạp lại toàn bộ tài liệu. Với Cohere, kích thước đoạn tối đa được hạ xuống 400 token (giới hạn đầu vào khoảng 512 token).
 
 Sau khi deploy:
 1. Nếu không dùng `hosted_zone_*`, trỏ CNAME của `domain_name` về output `AlbDnsName`.

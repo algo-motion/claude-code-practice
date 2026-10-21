@@ -2,7 +2,7 @@ from botocore.exceptions import ClientError
 
 from ..models import doc_to_json
 
-DEFAULT_KB_CONFIG = {"model": "Claude Sonnet", "emb": "Titan Text Embeddings V2", "chunk": "Theo ngữ nghĩa",
+DEFAULT_KB_CONFIG = {"model": "Claude Sonnet", "emb": "Cohere Embed Multilingual", "chunk": "Theo ngữ nghĩa",
                      "size": 512, "overlap": 15, "topk": 6, "guard": True, "rerank": True, "pii": True}
 
 

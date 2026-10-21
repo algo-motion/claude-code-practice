@@ -7,7 +7,7 @@ from constructs import Construct
 from .data import Data
 from .settings import Settings
 
-EMBEDDING_DIMENSIONS = 1024  # Titan Text Embeddings V2 mặc định
+EMBEDDING_DIMENSIONS = 1024  # Cohere Embed Multilingual v3 cố định 1024 chiều (Titan V2 mặc định cũng 1024)
 # Knowledge Base ghi nội dung đoạn và metadata hệ thống vào vector; hai khoá này không được lọc.
 NON_FILTERABLE_KEYS = ["AMAZON_BEDROCK_TEXT", "AMAZON_BEDROCK_METADATA"]
 
@@ -22,6 +22,9 @@ class Rag(Construct):
         super().__init__(scope, id)
         stack = Stack.of(self)
         removal = RemovalPolicy.RETAIN if settings.retain else RemovalPolicy.DESTROY
+
+        # Cohere Embed v3 nhận tối đa khoảng 512 token mỗi đoạn; chừa dư địa vì cách đếm token của hai bên khác nhau.
+        chunk_tokens = 400 if settings.embedding_model_id.startswith("cohere.") else 512
 
         # --- Kho vector
         vector_bucket = s3vectors.CfnVectorBucket(self, "VectorBucket")
@@ -73,7 +76,7 @@ class Rag(Construct):
                 chunking_configuration=bedrock.CfnDataSource.ChunkingConfigurationProperty(
                     chunking_strategy="SEMANTIC",
                     semantic_chunking_configuration=bedrock.CfnDataSource.SemanticChunkingConfigurationProperty(
-                        max_tokens=512, buffer_size=0, breakpoint_percentile_threshold=95))))
+                        max_tokens=chunk_tokens, buffer_size=0, breakpoint_percentile_threshold=95))))
 
         self.knowledge_base_id = kb.attr_knowledge_base_id
         self.knowledge_base_arn = kb.attr_knowledge_base_arn
